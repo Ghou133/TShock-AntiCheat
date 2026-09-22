@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+  "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+  "path": "MKLP/Modules/SurvivalManager.cs",
+  "status": "static_findings_not_runtime_proof",
+  "productionEligible": false,
+  "findings": [
+    {
+      "id": "PG-AUD-001",
+      "category": "tautological_boolean_subexpression",
+      "lines": [
+        95,
+        97,
+        108,
+        110
+      ],
+      "operationIds": [
+        "MKLP-OP-014",
+        "MKLP-OP-015",
+        "MKLP-OP-016",
+        "MKLP-OP-017",
+        "MKLP-OP-018",
+        "MKLP-OP-019",
+        "MKLP-OP-020",
+        "MKLP-OP-021"
+      ],
+      "finding": "currentbossdefeated != TheTwins || currentbossdefeated != SkeletronPrime is always true because the two enum values differ. The enclosing OR loses its mech-progression constraint.",
+      "handling": "Original AST preserved. Not selected as an independent candidate; no guessed != to == fix."
+    },
+    {
+      "id": "PG-AUD-002",
+      "category": "ineffective_remove",
+      "lines": [
+        401,
+        403,
+        1426,
+        1428
+      ],
+      "operationIds": [
+        "MKLP-OP-047",
+        "MKLP-OP-132"
+      ],
+      "finding": "Remove is guarded by !ContainsKey for the same key. The dictionary has no entry to remove whenever the call runs.",
+      "handling": "Inventory preserves exact original guard and ordered no-op semantics; not represented as an effective exception."
+    },
+    {
+      "id": "PG-AUD-003",
+      "category": "configuration_ignored",
+      "lines": [
+        131,
+        133
+      ],
+      "configLines": [
+        709,
+        721
+      ],
+      "finding": "allowbanners is hardcoded false; Config.Main.Progression.AllowBanners is declared and repaired by FixNull but not read by GetIllegalItem.",
+      "handling": "Both local initializer and config default recorded; do not claim changing the config enables banners."
+    },
+    {
+      "id": "PG-AUD-004",
+      "category": "wrong_collection_and_redundant_loop",
+      "lines": [
+        1180,
+        1181,
+        1188,
+        1190,
+        1194
+      ],
+      "operationIds": [
+        "MKLP-OP-114",
+        "MKLP-OP-115"
+      ],
+      "finding": "Golem declares vanityids (3556,2864), but the !allowvanity branch iterates addin again after a previous guarded Add of the same addin. Within this block the second pass adds nothing and does not add vanityids.",
+      "handling": "Do not silently substitute vanityids. This branch was not selected."
+    },
+    {
+      "id": "PG-AUD-005",
+      "category": "duplicate_array_entries",
+      "lines": [
+        281,
+        289,
+        291,
+        293
+      ],
+      "operationIds": [
+        "MKLP-OP-039"
+      ],
+      "items": [
+        3215,
+        3216
+      ],
+      "finding": "The Eye of Cthulhu array repeats both IDs. ContainsKey prevents duplicate Add for those entries; iteration overhead and source duplication remain.",
+      "handling": "Original duplicate occurrences preserved; curated item set deduplicated explicitly with curation metadata."
+    },
+    {
+      "id": "PG-AUD-006",
+      "category": "runtime_collection_exception",
+      "lines": [
+        974,
+        980,
+        982,
+        984,
+        985,
+        986
+      ],
+      "operationIds": [
+        "MKLP-OP-097",
+        "MKLP-OP-098",
+        "MKLP-OP-099"
+      ],
+      "finding": "Inside each Twins item iteration the source scans Main.npc and removes 1368/1369 when netID is 125 or 126, then breaks. There is no npc.active check in that condition.",
+      "handling": "Nested loop, branch and break preserved. Runtime NPC completeness, active-state semantics and cost need separate validation; no guessed boolean flattening."
+    },
+    {
+      "id": "PG-AUD-007",
+      "category": "constant_and_commented_branches",
+      "lines": [
+        257,
+        352,
+        531,
+        1080,
+        1367,
+        1386
+      ],
+      "operationIds": [
+        "MKLP-OP-037",
+        "MKLP-OP-044",
+        "MKLP-OP-058",
+        "MKLP-OP-106"
+      ],
+      "finding": "if(true) remains active; if(false) retains an unreachable operation in syntax inventory; the commented difficulty section is non-executable and excluded from mutation counts.",
+      "handling": "Control-flow tree distinguishes these states; comments listed separately as executable=false."
+    },
+    {
+      "id": "PG-AUD-008",
+      "category": "conditional_remove_exception",
+      "lines": [
+        1115,
+        1117,
+        1119,
+        1121,
+        1123,
+        1128,
+        1137
+      ],
+      "operationIds": [
+        "MKLP-OP-109",
+        "MKLP-OP-110"
+      ],
+      "finding": "Tenth-anniversary branch removes 5076..5088, but allowvanity && vanityids.Contains(i) continues that iteration; separate removal targets 5071..5073.",
+      "handling": "Keep conditional continue path and array membership; do not flatten to unconditional range subtraction."
+    },
+    {
+      "id": "PG-AUD-009",
+      "category": "ordered_overlap_not_union",
+      "lines": [
+        245,
+        831,
+        1475,
+        1495,
+        1555
+      ],
+      "finding": "264 item domains have multiple syntactic operations, including 41 IDs with both Add and Remove. Guarded Add retains the first present reason; later Remove changes membership; final runtime whitelist can remove any prior key.",
+      "handling": "Machine overlap inventory included. A source-operation match is not a final blacklist result. Curated rules declare this limited scope."
+    },
+    {
+      "id": "PG-AUD-010",
+      "category": "version_and_dependency_gap",
+      "path": "MKLP/MKLP.csproj",
+      "finding": "The project declares net9.0, OTAPI.Upcoming 3.3.11, TSAPI/TShock 6.1.0 and a local BanGuard reference. This does not prove acquisition semantics or 1.4.5.8 compatibility.",
+      "handling": "Old source is parsed only, never compiled or executed. Baseline acquisition unverified; target 1.4.5.8 blocked."
+    },
+    {
+      "id": "PG-AUD-011",
+      "category": "author_label_not_proof",
+      "lines": [
+        60,
+        64,
+        68,
+        69,
+        81
+      ],
+      "finding": "Unobtainable labels and item presence alone do not establish player intent, active responsibility, legal acquisition impossibility or safe cancellation.",
+      "handling": "Natural-impossibility classification is research intent only. All productionEligible flags stay false; passive recipients and unknown history cannot be sanctioned."
+    }
+  ]
+}

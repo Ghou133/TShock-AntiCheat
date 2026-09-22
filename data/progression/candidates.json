@@ -1,0 +1,2662 @@
+{
+  "schemaVersion": 1,
+  "catalogPurpose": "Non-production research candidates for independent three-valued predicate tests.",
+  "sourceInventory": "mklp-operations.json",
+  "productionEligible": false,
+  "rules": [
+    {
+      "id": "PG-NAT-001",
+      "title": "\u6E90\u8868\u65E0\u6761\u4EF6\u4E0D\u53EF\u83B7\u5F97\u5019\u9009 603/766",
+      "items": [
+        603,
+        766
+      ],
+      "classification": "natural_impossibility_candidate",
+      "condition": {
+        "op": "constant",
+        "value": true
+      },
+      "sourcePredicate": {
+        "op": "constant",
+        "value": true
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 68,
+          "lineEnd": 68,
+          "operationIds": [
+            "MKLP-OP-007"
+          ]
+        },
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 69,
+          "lineEnd": 69,
+          "operationIds": [
+            "MKLP-OP-008"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "No natural impossibility is established by extraction.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-NAT-002",
+      "title": "\u6E90\u8868\u7269\u54C1 678 \u7684\u7279\u6B8A\u4E16\u754C\u4F8B\u5916\u5019\u9009",
+      "items": [
+        678
+      ],
+      "classification": "natural_impossibility_candidate",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "Main.drunkWorld",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "Main.getGoodWorld",
+                      "equals": true
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "Main.zenithWorld",
+                  "equals": true
+                }
+              }
+            ]
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "Main.tenthAnniversaryWorld",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "Main.drunkWorld",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "Main.getGoodWorld",
+                      "equals": true
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "Main.zenithWorld",
+                  "equals": true
+                }
+              }
+            ]
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "Main.tenthAnniversaryWorld",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 83,
+          "lineEnd": 83,
+          "operationIds": [
+            "MKLP-OP-010"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "No natural impossibility is established by extraction.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-001",
+      "title": "\u53F2\u83B1\u59C6\u738B\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        256,
+        257,
+        258,
+        762,
+        767,
+        769,
+        815,
+        998,
+        2430,
+        2489,
+        2493,
+        2585,
+        2610,
+        3090,
+        3318,
+        4120,
+        4797,
+        4929,
+        5131,
+        5495
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedSlimeKing",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.KingSlime"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedSlimeKing",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.KingSlime"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 254,
+          "lineEnd": 254,
+          "operationIds": [
+            "MKLP-OP-036"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-002",
+      "title": "\u514B\u82CF\u9C81\u4E4B\u773C\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        3215,
+        3216,
+        3217,
+        3218,
+        3219,
+        3220,
+        3221,
+        3222,
+        5532,
+        5533,
+        114,
+        1299,
+        1360,
+        1853,
+        1854,
+        2112,
+        3097,
+        3262,
+        3319,
+        4241,
+        4347,
+        4798,
+        4924,
+        5004,
+        5276,
+        5323,
+        5454,
+        5455
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedBoss1",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.EyeOfCthulhu"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedBoss1",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.EyeOfCthulhu"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 293,
+          "lineEnd": 293,
+          "operationIds": [
+            "MKLP-OP-039"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": true,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-003",
+      "title": "\u72EC\u773C\u5DE8\u9E7F\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        5090,
+        5095,
+        5098,
+        5100,
+        5108,
+        5110,
+        5111,
+        5117,
+        5118,
+        5119,
+        5385
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedDeerclops",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.Deerclops"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedDeerclops",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.Deerclops"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 568,
+          "lineEnd": 568,
+          "operationIds": [
+            "MKLP-OP-060"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-004",
+      "title": "\u53F2\u83B1\u59C6\u7687\u540E\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        4758,
+        4950,
+        4957,
+        4958,
+        4959,
+        4960,
+        4980,
+        4981,
+        4982,
+        4983,
+        4984,
+        4986,
+        4987,
+        5131
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedQueenSlime",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.QueenSlime"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedQueenSlime",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.QueenSlime"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 837,
+          "lineEnd": 837,
+          "operationIds": [
+            "MKLP-OP-087"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-005",
+      "title": "\u4EFB\u610F\u673A\u68B0 Boss \u524D\uFF1A\u4FDD\u7559\u516D\u4E2A\u524D\u63D0\u7684 AND",
+      "items": [
+        3602,
+        3603,
+        3604,
+        3605,
+        3606,
+        3607,
+        3608
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "all",
+                    "args": [
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "NPC.downedMechBoss1",
+                          "equals": true
+                        }
+                      },
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "NPC.downedMechBoss2",
+                          "equals": true
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedMechBoss3",
+                      "equals": true
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "all",
+                    "args": [
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "currentbossdefeated",
+                          "equals": "BossDType.TheDestroyer"
+                        }
+                      },
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "currentbossdefeated",
+                          "equals": "BossDType.TheTwins"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.SkeletronPrime"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedMechBoss1",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedMechBoss2",
+                      "equals": true
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedMechBoss3",
+                  "equals": true
+                }
+              }
+            ]
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.TheDestroyer"
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.TheTwins"
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.SkeletronPrime"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 854,
+          "lineEnd": 854,
+          "operationIds": [
+            "MKLP-OP-088"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-006",
+      "title": "\u5168\u90E8\u673A\u68B0 Boss \u524D\uFF1A\u4FDD\u7559\u4E09\u4E2A\u7F3A\u5931\u5206\u652F\u7684 OR",
+      "items": [
+        1226,
+        1227,
+        1228,
+        1229,
+        1230,
+        1231,
+        1232,
+        1233,
+        1234,
+        1235
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "any",
+            "args": [
+              {
+                "op": "any",
+                "args": [
+                  {
+                    "op": "all",
+                    "args": [
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "NPC.downedMechBoss1",
+                          "equals": true
+                        }
+                      },
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "currentbossdefeated",
+                          "equals": "BossDType.TheDestroyer"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "op": "all",
+                    "args": [
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "NPC.downedMechBoss2",
+                          "equals": true
+                        }
+                      },
+                      {
+                        "op": "not",
+                        "arg": {
+                          "op": "fact",
+                          "name": "currentbossdefeated",
+                          "equals": "BossDType.TheTwins"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedMechBoss3",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.SkeletronPrime"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "any",
+        "args": [
+          {
+            "op": "any",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedMechBoss1",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.TheDestroyer"
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedMechBoss2",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.TheTwins"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedMechBoss3",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.SkeletronPrime"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 926,
+          "lineEnd": 926,
+          "operationIds": [
+            "MKLP-OP-093"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-007",
+      "title": "\u4E16\u7EAA\u4E4B\u82B1\u8303\u56F4\u5019\u9009\uFF1A\u4FDD\u7559 1158 \u6392\u9664",
+      "items": [
+        1155,
+        1156,
+        1157,
+        1159,
+        1160,
+        1161,
+        1162
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedPlantBoss",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.Plantera"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedPlantBoss",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.Plantera"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 1022,
+          "lineEnd": 1022,
+          "operationIds": [
+            "MKLP-OP-101"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-008",
+      "title": "\u77F3\u5DE8\u4EBA\u8303\u56F4\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        2803,
+        2804,
+        2805,
+        2806,
+        2807,
+        2808,
+        2809,
+        2810,
+        2811,
+        2812,
+        2813,
+        2814,
+        2815,
+        2816,
+        2817,
+        2818,
+        2819,
+        2820,
+        2821,
+        2822,
+        2823,
+        2824,
+        2825,
+        2826
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedGolemBoss",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.Golem"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedGolemBoss",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.Golem"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 1153,
+          "lineEnd": 1153,
+          "operationIds": [
+            "MKLP-OP-111"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-009",
+      "title": "\u732A\u9F99\u9C7C\u516C\u7235\u9636\u6BB5\u5019\u9009\uFF1A\u6682\u4E0D\u9009\u53D6\u5B58\u5728\u6B66\u5668\u4EA4\u6362 Remove \u7684 2623",
+      "items": [
+        2588,
+        2589,
+        2609,
+        2611,
+        2621,
+        2622,
+        2624,
+        3330,
+        3367,
+        4808,
+        4936,
+        5478,
+        5526
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedFishron",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.DukeFishron"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedFishron",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.DukeFishron"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 1212,
+          "lineEnd": 1212,
+          "operationIds": [
+            "MKLP-OP-116"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [
+          2623
+        ],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-010",
+      "title": "\u5149\u4E4B\u5973\u7687\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        4715,
+        4778,
+        4782,
+        4783,
+        4784,
+        4811,
+        4823,
+        4914,
+        4923,
+        4949,
+        4952,
+        4953,
+        4989,
+        5005
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedEmpressOfLight",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.EmpressOfLight"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedEmpressOfLight",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.EmpressOfLight"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 1243,
+          "lineEnd": 1243,
+          "operationIds": [
+            "MKLP-OP-118"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-011",
+      "title": "\u62DC\u6708\u6559\u90AA\u6559\u5F92\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        3331,
+        3357,
+        3372,
+        3456,
+        3457,
+        3458,
+        3459,
+        3473,
+        3474,
+        3475,
+        3476,
+        3536,
+        3537,
+        3538,
+        3539,
+        3540,
+        3542,
+        3543,
+        3544,
+        3549,
+        3572,
+        3573,
+        3574,
+        3575,
+        3576,
+        3601,
+        4809,
+        4937,
+        5479
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedAncientCultist",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.LunaticCultist"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedAncientCultist",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.LunaticCultist"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 1281,
+          "lineEnd": 1281,
+          "operationIds": [
+            "MKLP-OP-121"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-012",
+      "title": "\u6708\u4EAE\u9886\u4E3B\u9636\u6BB5\u670D\u89C4\u5019\u9009",
+      "items": [
+        1553,
+        2768,
+        2774,
+        2776,
+        2779,
+        2781,
+        2784,
+        2786,
+        3063,
+        3065,
+        3332,
+        3373,
+        3381,
+        3382,
+        3383,
+        3384,
+        3389,
+        3460,
+        3461,
+        3464,
+        3466,
+        3467,
+        3468,
+        3469,
+        3470,
+        3471,
+        3472,
+        3522,
+        3523,
+        3524,
+        3525,
+        3541,
+        3567,
+        3568,
+        3569,
+        3570,
+        3571,
+        3577,
+        3595,
+        3596,
+        3664,
+        3930,
+        4318,
+        4810,
+        4938,
+        4954,
+        4956,
+        5134,
+        5335,
+        5364,
+        5392,
+        5393,
+        5394,
+        5480,
+        5669
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedMoonlord",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.MoonLord"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "NPC.downedMoonlord",
+              "equals": true
+            }
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "currentbossdefeated",
+              "equals": "BossDType.MoonLord"
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 1331,
+          "lineEnd": 1331,
+          "operationIds": [
+            "MKLP-OP-125"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-013",
+      "title": "\u97F3\u4E50\u76D2\u7684\u53EF\u914D\u7F6E\u670D\u89C4\u5019\u9009",
+      "items": [
+        576,
+        2742,
+        3236,
+        3237,
+        3371,
+        3796,
+        4077,
+        4078,
+        4079,
+        4080,
+        4081,
+        4082,
+        4356,
+        4357,
+        4358,
+        4606,
+        4979,
+        4990,
+        4991,
+        4992,
+        5006,
+        5112,
+        5362,
+        5538,
+        5539,
+        5578,
+        5579,
+        5580,
+        5581,
+        5582,
+        5637,
+        5638,
+        5639,
+        6144
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "Main.hardMode",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.WallOfFlesh"
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "MKLP.Config.Main.Progression.AllowMusicBox",
+                  "equals": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "Main.hardMode",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.WallOfFlesh"
+                }
+              }
+            ]
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "MKLP.Config.Main.Progression.AllowMusicBox",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 705,
+          "lineEnd": 705,
+          "operationIds": [
+            "MKLP-OP-077"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    },
+    {
+      "id": "PG-POL-014",
+      "title": "\u72EC\u773C\u5DE8\u9E7F\u5916\u89C2\u7684\u53EF\u914D\u7F6E\u670D\u89C4\u5019\u9009",
+      "items": [
+        5101,
+        5109,
+        5113
+      ],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          {
+            "op": "fact",
+            "name": "policy.mklpSubsetEnabled",
+            "equals": true
+          },
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "all",
+                "args": [
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "NPC.downedDeerclops",
+                      "equals": true
+                    }
+                  },
+                  {
+                    "op": "not",
+                    "arg": {
+                      "op": "fact",
+                      "name": "currentbossdefeated",
+                      "equals": "BossDType.Deerclops"
+                    }
+                  }
+                ]
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "MKLP.Config.Main.Progression.AllowVanityCloth",
+                  "equals": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "sourcePredicate": {
+        "op": "all",
+        "args": [
+          {
+            "op": "all",
+            "args": [
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "NPC.downedDeerclops",
+                  "equals": true
+                }
+              },
+              {
+                "op": "not",
+                "arg": {
+                  "op": "fact",
+                  "name": "currentbossdefeated",
+                  "equals": "BossDType.Deerclops"
+                }
+              }
+            ]
+          },
+          {
+            "op": "not",
+            "arg": {
+              "op": "fact",
+              "name": "MKLP.Config.Main.Progression.AllowVanityCloth",
+              "equals": true
+            }
+          }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          {
+            "op": "fact",
+            "name": "exception.sourceWhitelistMatchesItem",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.authorizedServerGrant",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.legacyOrImportedAsset",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.passiveReceipt",
+            "equals": true
+          },
+          {
+            "op": "fact",
+            "name": "exception.otherPlayerCausedState",
+            "equals": true
+          }
+        ]
+      },
+      "requiredContexts": [
+        "version_manifest",
+        "world_progress_and_world_generation",
+        "authenticated_account_and_session_generation",
+        "active_action_attribution",
+        "applicable_policy_and_authorizations",
+        "legal_acquisition_exceptions"
+      ],
+      "proofPreconditions": [
+        "Validate each item and acquisition path on the exact approved version; an existing item ID or upstream label is not proof.",
+        "Bind the active action to the authenticated account and current server session/world generations.",
+        "Exclude passive pickup, actions caused by other players, imported history, authorized grants and configured whitelist.",
+        "Preserve currentbossdefeated as a same-event exception; do not wait for repeat cheating or warning counts.",
+        "For server_policy rules, establish an applicable explicit policy; source server preferences are not vanilla impossibility.",
+        "Prove current-action cancellation before affected writes and broadcasts, then qualify first-sanction behavior in isolation.",
+        "Until all admission requirements are validated, a matching predicate remains a research candidate and never bans or freezes assets."
+      ],
+      "sources": [
+        {
+          "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+          "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+          "path": "MKLP/Modules/SurvivalManager.cs",
+          "lineStart": 560,
+          "lineEnd": 560,
+          "operationIds": [
+            "MKLP-OP-059"
+          ]
+        }
+      ],
+      "sourceScope": "Selected source-operation predicate only; not the final ordered dictionary result or a complete acquisition model.",
+      "curation": {
+        "removedDictionaryGuards": "ContainsKey is an ordered collection implementation guard, not a game-world proof; original remains in mklp-operations.json.",
+        "deduplicatedSelectedItems": false,
+        "excludedFromSelection": [],
+        "addedApplicability": "policy.mklpSubsetEnabled must be explicitly true; missing configuration remains Unknown.",
+        "additionalExceptions": "Shared attribution/history/authorization exclusions are newly required safeguards; they are not claimed to exist in the original implementation."
+      },
+      "qualification": {
+        "productionEligible": false,
+        "baseline1456": "acquisition_unverified",
+        "target1458": "blocked",
+        "status": "source_candidate_only"
+      }
+    }
+  ]
+}

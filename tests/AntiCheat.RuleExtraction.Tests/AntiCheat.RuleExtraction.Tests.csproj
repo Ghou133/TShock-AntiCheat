@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="NUnit" Version="4.3.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <ProjectReference Include="../../tools/AntiCheat.RuleExtraction/AntiCheat.RuleExtraction.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../reference/mklp/MKLP/Modules/SurvivalManager.cs" Link="fixtures/SurvivalManager.source.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../reference/mklp/MKLP/Config.cs" Link="fixtures/Config.source.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

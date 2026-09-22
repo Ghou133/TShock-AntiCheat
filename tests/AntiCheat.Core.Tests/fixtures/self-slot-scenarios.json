@@ -1,0 +1,12 @@
+[
+  { "id": "normal-inventory-own-slot", "serverSlot": 4, "claimedSlot": 4, "expected": "Pass" },
+  { "id": "normal-highest-slot", "serverSlot": 255, "claimedSlot": 255, "expected": "Pass" },
+  { "id": "legal-attributed-exception", "serverSlot": 4, "claimedSlot": 5, "knownLegalException": true, "expected": "Pass" },
+  { "id": "first-complete-self-slot-violation-lab-only", "serverSlot": 4, "claimedSlot": 5, "expected": "ProvenCheat" },
+  { "id": "unknown-runtime", "serverSlot": 4, "claimedSlot": 5, "runtimeFingerprint": "unverified-1.4.5.8", "expected": "Unknown" },
+  { "id": "incomplete-packet", "serverSlot": 4, "claimedSlot": 5, "parseComplete": false, "expected": "Unknown" },
+  { "id": "another-plugin-origin", "serverSlot": 4, "claimedSlot": 5, "clientOrigin": false, "expected": "Unknown" },
+  { "id": "account-not-authenticated", "serverSlot": 4, "claimedSlot": 5, "authenticated": false, "expected": "Unknown" },
+  { "id": "unknown-legal-exceptions", "serverSlot": 4, "claimedSlot": 5, "exceptionsExcluded": false, "expected": "Unknown" },
+  { "id": "parser-representation-fault", "serverSlot": 4, "claimedSlot": -1, "expected": "UnsafeInput" }
+]

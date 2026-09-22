@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "catalogPurpose": "M7 isolated Celestial Sigil source group and independent native-use contract. Not a runtime item-possession blacklist.",
+  "sourceInventory": "mklp-operations.json",
+  "productionEligible": false,
+  "sourceOrder": ["MKLP-OP-121"],
+  "sourceOrderMeaning": "OP-121 guarded Add remains at sourceOrdinal121. Full earlier/later Add, Remove and configured whitelist semantics remain in mklp-operations.json; this projection is not the final source dictionary.",
+  "source": {
+    "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+    "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+    "path": "MKLP/Modules/SurvivalManager.cs",
+    "lineStart": 1252,
+    "lineEnd": 1283,
+    "operationIds": ["MKLP-OP-121"],
+    "license": "MIT",
+    "reuse": "Licensed condition/data extraction only; independent product implementation. Source policy is not natural acquisition proof."
+  },
+  "sourcePolicyCandidate": {
+    "id": "PG-POL-121.CelestialSigilItemCandidate",
+    "items": [3601],
+    "classification": "server_policy",
+    "sourcePredicate": "!NPC.downedAncientCultist && currentbossdefeated != BossDType.LunaticCultist",
+    "condition": {
+      "op": "all",
+      "args": [
+        { "op": "fact", "name": "policy.mklpSubsetEnabled", "equals": true },
+        { "op": "not", "arg": { "op": "fact", "name": "NPC.downedAncientCultist", "equals": true } },
+        { "op": "not", "arg": { "op": "fact", "name": "currentbossdefeated", "equals": "BossDType.LunaticCultist" } }
+      ]
+    },
+    "implementationGuard": "!getillegalitems.ContainsKey(add)",
+    "exceptions": ["same-event Cultist defeat retained in AND predicate", "configured source whitelist", "legacy/imported assets", "authorized server grant", "passive receipt or teammate transfer", "unknown source-policy applicability"],
+    "requiredContexts": ["explicit policy applicability", "same-event boss", "SSC initial/migration history", "bounded grant authorization", "active manufacturing attribution"],
+    "qualification": { "status": "isolated_source_policy_not_adopted", "target1458": "acquisition_unverified", "productionEligible": false }
+  },
+  "independentActiveUseContract": {
+    "id": "PG-NAT-121.CelestialSigilWorld",
+    "version": "1.0.0",
+    "classification": "natural_client_action_world_gate",
+    "packet": 61,
+    "summonType": -8,
+    "nativeProducer": "Terraria.Player.ItemCheck_UseEventItems(item3601)",
+    "nativeWorldGate": "Main.hardMode && NPC.downedGolemBoss",
+    "proof": "A current authenticated subject actively submits raw61/-8 while a native-use world gate is closed, with exact runtime, from-start unchanged world/export baseline, native plugin history and initial synchronization complete.",
+    "exceptions": ["both native gates open, even without downedAncientCultist", "incomplete world/export/plugin contract", "wrong sender or stale generation", "initial SSC synchronization", "passive item storage or transfer does not invoke this contract"],
+    "acquisitionHistoryClaimed": false,
+    "productionEligible": false,
+    "qualification": "Code registry controls each runtime/scope; this data file cannot admit sanctions. Final frozen-candidate evidence is recorded in the M7 delivery report."
+  }
+}

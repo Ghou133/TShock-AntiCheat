@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <TShockBaselineRoot Condition="'$(TShockBaselineRoot)' == ''">$(MSBuildThisFileDirectory)..\..\.lab\runtime-m12-r2\win-x64-framework-dependent</TShockBaselineRoot>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>0.2.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\tools\AntiCheat.GameplayScaffold\M7ConnectionDiagnostics.cs" Link="Diagnostics\M7ConnectionDiagnostics.cs" />
+    <Compile Include="..\..\tools\AntiCheat.GameplayScaffold\M7HelloSocketDiagnostics.cs" Link="Diagnostics\M7HelloSocketDiagnostics.cs" />
+    <Compile Include="..\..\tools\AntiCheat.GameplayScaffold\M10ConnectionLifecycleDiagnostics.cs" Link="Diagnostics\M10ConnectionLifecycleDiagnostics.cs" />
+    <Compile Include="..\..\tools\AntiCheat.GameplayScaffold\M16CombatLabDiagnostics.cs" Link="Diagnostics\M16CombatLabDiagnostics.cs" />
+    <None Include="..\..\data\progression\candidates.json" Link="data\progression\candidates.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\data\progression\entity-candidates.json" Link="data\progression\entity-candidates.json" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\AntiCheat.Core\AntiCheat.Core.csproj" />
+    <ProjectReference Include="..\AntiCheat.Persistence\AntiCheat.Persistence.csproj" />
+    <ProjectReference Include="..\AntiCheat.Rules\AntiCheat.Rules.csproj" />
+    <Reference Include="TShockAPI"><HintPath>$(TShockBaselineRoot)\ServerPlugins\TShockAPI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="HttpServer"><HintPath>$(TShockBaselineRoot)\bin\HttpServer.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TerrariaServer"><HintPath>$(TShockBaselineRoot)\bin\TerrariaServer.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="OTAPI"><HintPath>$(TShockBaselineRoot)\bin\OTAPI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ModFramework"><HintPath>$(TShockBaselineRoot)\bin\ModFramework.dll</HintPath><Private>false</Private></Reference>
+    <!-- Exact dependency already embedded by the audited launcher; compile only, never replace its runtime image. -->
+    <PackageReference Include="MonoMod.RuntimeDetour" Version="25.2.3" IncludeAssets="compile" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="RequireRealBaseline" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(TShockBaselineRoot)\ServerPlugins\TShockAPI.dll') Or !Exists('$(TShockBaselineRoot)\bin\TerrariaServer.dll') Or !Exists('$(TShockBaselineRoot)\bin\OTAPI.dll')" Text="Actual matching TShock/TSAPI/OTAPI assemblies are required. Set TShockBaselineRoot to an audited runtime bundle; API stubs are forbidden." />
+  </Target>
+</Project>

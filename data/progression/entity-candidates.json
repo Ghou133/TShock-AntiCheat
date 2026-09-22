@@ -1,0 +1,1532 @@
+{
+  "schemaVersion": 1,
+  "catalogPurpose": "Selected additional entity progression predicates. No target acquisition/source mechanism is admitted by this data.",
+  "targetTerraria": "1.4.5.8",
+  "productionEligible": false,
+  "licenseNotice": "../../reference/mklp/LICENSE",
+  "rules": [
+    {
+      "subjectKind": "Projectile",
+      "targets": [
+        {
+          "typeId": 406
+        },
+        {
+          "typeId": 881
+        },
+        {
+          "typeId": 1042
+        },
+        {
+          "typeId": 1103
+        },
+        {
+          "typeId": 1104
+        }
+      ],
+      "rule": {
+        "id": "PG-PRJ-POL-001",
+        "items": [
+          406,
+          881,
+          1042,
+          1103,
+          1104
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedSlimeKing",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.KingSlime"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "all",
+          "args": [
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "NPC.downedSlimeKing",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "currentbossdefeated",
+                "equals": "BossDType.KingSlime"
+              }
+            }
+          ]
+        },
+        "sourceExpression": "!NPC.downedSlimeKing && currentbossdefeated != BossDType.KingSlime",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 1628,
+            "lineEnd": 1653,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "Original if(true) solidifier subgroup is included; no claim that stage table excludes all alternate projectile sources.",
+          "sourceWhitelist": "WhiteList_Survival_Code2"
+        }
+      }
+    },
+    {
+      "subjectKind": "Projectile",
+      "targets": [
+        {
+          "typeId": 1012
+        }
+      ],
+      "rule": {
+        "id": "PG-PRJ-NAT-001",
+        "items": [
+          1012
+        ],
+        "classification": "natural_impossibility_candidate",
+        "condition": {
+          "op": "not",
+          "arg": {
+            "op": "fact",
+            "name": "Main.zenithWorld",
+            "equals": true
+          }
+        },
+        "sourcePredicate": {
+          "op": "not",
+          "arg": {
+            "op": "fact",
+            "name": "Main.zenithWorld",
+            "equals": true
+          }
+        },
+        "sourceExpression": "!Main.zenithWorld",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 1613,
+            "lineEnd": 1620,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "Client creation only. The source label is unverified; an exact-version acquisition/source contract is still required.",
+          "sourceWhitelist": "WhiteList_Survival_Code2"
+        }
+      }
+    },
+    {
+      "subjectKind": "Tile",
+      "targets": [
+        {
+          "typeId": 10,
+          "style": 31
+        },
+        {
+          "typeId": 11,
+          "style": 32
+        },
+        {
+          "typeId": 14,
+          "style": 29
+        },
+        {
+          "typeId": 15,
+          "style": 31
+        },
+        {
+          "typeId": 18,
+          "style": 8
+        },
+        {
+          "typeId": 19,
+          "style": 20
+        },
+        {
+          "typeId": 34,
+          "style": 26
+        },
+        {
+          "typeId": 42,
+          "style": 30
+        },
+        {
+          "typeId": 79,
+          "style": 25
+        },
+        {
+          "typeId": 87,
+          "style": 24
+        },
+        {
+          "typeId": 88,
+          "style": 19
+        },
+        {
+          "typeId": 89,
+          "style": 25
+        },
+        {
+          "typeId": 90,
+          "style": 20
+        },
+        {
+          "typeId": 93,
+          "style": 21
+        },
+        {
+          "typeId": 100,
+          "style": 21
+        },
+        {
+          "typeId": 101,
+          "style": 26
+        },
+        {
+          "typeId": 104,
+          "style": 7
+        },
+        {
+          "typeId": 172,
+          "style": 26
+        },
+        {
+          "typeId": 193,
+          "style": 0
+        },
+        {
+          "typeId": 197,
+          "style": 0
+        },
+        {
+          "typeId": 220,
+          "style": 0
+        },
+        {
+          "typeId": 240,
+          "style": 54
+        },
+        {
+          "typeId": 371,
+          "style": 0
+        },
+        {
+          "typeId": 380,
+          "style": 0
+        },
+        {
+          "typeId": 441,
+          "style": 34
+        },
+        {
+          "typeId": 497,
+          "style": 24
+        }
+      ],
+      "rule": {
+        "id": "PG-TILE-POL-001",
+        "items": [
+          10,
+          11,
+          14,
+          15,
+          18,
+          19,
+          34,
+          42,
+          79,
+          87,
+          88,
+          89,
+          90,
+          93,
+          100,
+          101,
+          104,
+          172,
+          193,
+          197,
+          220,
+          240,
+          371,
+          380,
+          441,
+          497
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedSlimeKing",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.KingSlime"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "all",
+          "args": [
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "NPC.downedSlimeKing",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "currentbossdefeated",
+                "equals": "BossDType.KingSlime"
+              }
+            }
+          ]
+        },
+        "sourceExpression": "!NPC.downedSlimeKing && currentbossdefeated != BossDType.KingSlime",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 2880,
+            "lineEnd": 2894,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "Type AND style preserved. No import of fixed ObjectIDs array, no inversion from type to assumed item ownership.",
+          "sourceWhitelist": "No active Code3 whitelist in source; project adds scoped exception."
+        }
+      }
+    },
+    {
+      "subjectKind": "Tile",
+      "targets": [
+        {
+          "typeId": 211,
+          "style": 0
+        },
+        {
+          "typeId": 239,
+          "style": 17
+        },
+        {
+          "typeId": 346,
+          "style": 0
+        }
+      ],
+      "rule": {
+        "id": "PG-TILE-POL-002",
+        "items": [
+          211,
+          239,
+          346
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "any",
+              "args": [
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedMechBoss1",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.TheDestroyer"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedMechBoss2",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.TheTwins"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedMechBoss3",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.SkeletronPrime"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "any",
+          "args": [
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss1",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.TheDestroyer"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss2",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.TheTwins"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss3",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.SkeletronPrime"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourceExpression": "(!NPC.downedMechBoss1 && currentbossdefeated != BossDType.TheDestroyer) || (!NPC.downedMechBoss2 && currentbossdefeated != BossDType.TheTwins) || (!NPC.downedMechBoss3 && currentbossdefeated != BossDType.SkeletronPrime)",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 3163,
+            "lineEnd": 3178,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "All-mechanical stage is an OR of three missing-stage conjunctions, with exact styles.",
+          "sourceWhitelist": "No active Code3 whitelist in source; project adds scoped exception."
+        }
+      }
+    },
+    {
+      "subjectKind": "Wall",
+      "targets": [
+        {
+          "typeId": 76
+        }
+      ],
+      "rule": {
+        "id": "PG-WALL-POL-001",
+        "items": [
+          76
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedSlimeKing",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.KingSlime"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "all",
+          "args": [
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "NPC.downedSlimeKing",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "currentbossdefeated",
+                "equals": "BossDType.KingSlime"
+              }
+            }
+          ]
+        },
+        "sourceExpression": "!NPC.downedSlimeKing && currentbossdefeated != BossDType.KingSlime",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 3522,
+            "lineEnd": 3533,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "Uses Code4 whitelist; policy does not infer wall material acquisition from presence.",
+          "sourceWhitelist": "WhiteList_Survival_Code4"
+        }
+      }
+    },
+    {
+      "subjectKind": "Wall",
+      "targets": [
+        {
+          "typeId": 77
+        },
+        {
+          "typeId": 225
+        },
+        {
+          "typeId": 233
+        }
+      ],
+      "rule": {
+        "id": "PG-WALL-POL-002",
+        "items": [
+          77,
+          225,
+          233
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss1",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss2",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss3",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.TheDestroyer"
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.TheTwins"
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.SkeletronPrime"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "all",
+          "args": [
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "NPC.downedMechBoss1",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "NPC.downedMechBoss2",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "NPC.downedMechBoss3",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "currentbossdefeated",
+                "equals": "BossDType.TheDestroyer"
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "currentbossdefeated",
+                "equals": "BossDType.TheTwins"
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "currentbossdefeated",
+                "equals": "BossDType.SkeletronPrime"
+              }
+            }
+          ]
+        },
+        "sourceExpression": "(!NPC.downedMechBoss1 && !NPC.downedMechBoss2 && !NPC.downedMechBoss3) && (currentbossdefeated != BossDType.TheDestroyer && currentbossdefeated != BossDType.TheTwins && currentbossdefeated != BossDType.SkeletronPrime)",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 3635,
+            "lineEnd": 3648,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "Any-mechanical stage retains six-way AND.",
+          "sourceWhitelist": "WhiteList_Survival_Code4"
+        }
+      }
+    },
+    {
+      "subjectKind": "Wall",
+      "targets": [
+        {
+          "typeId": 173
+        }
+      ],
+      "rule": {
+        "id": "PG-WALL-POL-003",
+        "items": [
+          173
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "any",
+              "args": [
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedMechBoss1",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.TheDestroyer"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedMechBoss2",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.TheTwins"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedMechBoss3",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.SkeletronPrime"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "any",
+          "args": [
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss1",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.TheDestroyer"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss2",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.TheTwins"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedMechBoss3",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.SkeletronPrime"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourceExpression": "(!NPC.downedMechBoss1 && currentbossdefeated != BossDType.TheDestroyer) || (!NPC.downedMechBoss2 && currentbossdefeated != BossDType.TheTwins) || (!NPC.downedMechBoss3 && currentbossdefeated != BossDType.SkeletronPrime)",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 3652,
+            "lineEnd": 3664,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "All-mechanical stage retains OR of three AND branches.",
+          "sourceWhitelist": "WhiteList_Survival_Code4"
+        }
+      }
+    },
+    {
+      "subjectKind": "Wall",
+      "targets": [
+        {
+          "typeId": 75
+        }
+      ],
+      "rule": {
+        "id": "PG-WALL-POL-004",
+        "items": [
+          75
+        ],
+        "classification": "server_policy",
+        "condition": {
+          "op": "all",
+          "args": [
+            {
+              "op": "fact",
+              "name": "policy.mklpEntitySubsetEnabled",
+              "equals": true
+            },
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "all",
+                  "args": [
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "NPC.downedBoss3",
+                        "equals": true
+                      }
+                    },
+                    {
+                      "op": "not",
+                      "arg": {
+                        "op": "fact",
+                        "name": "currentbossdefeated",
+                        "equals": "BossDType.Skeletron"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "Main.drunkWorld",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "Main.remixWorld",
+                    "equals": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "sourcePredicate": {
+          "op": "all",
+          "args": [
+            {
+              "op": "all",
+              "args": [
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "NPC.downedBoss3",
+                    "equals": true
+                  }
+                },
+                {
+                  "op": "not",
+                  "arg": {
+                    "op": "fact",
+                    "name": "currentbossdefeated",
+                    "equals": "BossDType.Skeletron"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "Main.drunkWorld",
+                "equals": true
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "fact",
+                "name": "Main.remixWorld",
+                "equals": true
+              }
+            }
+          ]
+        },
+        "sourceExpression": "!NPC.downedBoss3 && currentbossdefeated != BossDType.Skeletron && !Main.drunkWorld && !Main.remixWorld",
+        "exceptions": {
+          "op": "any",
+          "args": [
+            {
+              "op": "fact",
+              "name": "exception.sourceWhitelistMatchesSubject",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.authorizedServerGrant",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.legacyOrImportedAsset",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.passiveReceipt",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.otherPlayerCausedState",
+              "equals": true
+            },
+            {
+              "op": "fact",
+              "name": "exception.serverOrEnvironmentalCreation",
+              "equals": true
+            }
+          ]
+        },
+        "requiredContexts": [
+          "exact_runtime_version",
+          "current_session_and_world_epoch",
+          "active_direct_creation_or_placement",
+          "trusted_world_progress_and_same_event_boss",
+          "complete_seed_and_legal_exception_contract",
+          "exact_tile_style_when_applicable"
+        ],
+        "proofPreconditions": [
+          "Use a current trusted mechanism contract for this exact type namespace, action, runtime and seed.",
+          "Exclude passive state, environment, server creation, initial synchronization and imported/authorized state.",
+          "Preserve source whitelist and per-action policy applicability; apply before mutation and broadcasts.",
+          "Core runtime registry gates TestLab versus production; data/configuration cannot admit a production sanction."
+        ],
+        "sources": [
+          {
+            "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+            "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+            "path": "MKLP/Modules/SurvivalManager.cs",
+            "lineStart": 3565,
+            "lineEnd": 3595,
+            "license": "MIT",
+            "reuseMode": "selected_data_and_conditions_with_project_proof_contract"
+          }
+        ],
+        "qualification": {
+          "productionEligible": false,
+          "baseline1456": "acquisition_unverified",
+          "target1458": "mechanism_unverified",
+          "status": "implemented_predicate_not_production_admitted"
+        },
+        "curation": {
+          "differences": "Special-seed exclusions retained; surrounding unused arrays and invalid mixed-domain IDs were not selected.",
+          "sourceWhitelist": "WhiteList_Survival_Code4"
+        }
+      }
+    }
+  ]
+}

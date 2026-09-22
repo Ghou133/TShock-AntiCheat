@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net9.0": {
+      "anticheat.core": {
+        "type": "Project"
+      },
+      "anticheat.progression": {
+        "type": "Project"
+      },
+      "anticheat.rules": {
+        "type": "Project",
+        "dependencies": {
+          "AntiCheat.Core": "[1.0.0, )",
+          "AntiCheat.Progression": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

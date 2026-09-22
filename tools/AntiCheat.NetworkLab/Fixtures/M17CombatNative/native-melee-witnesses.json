@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "target": "Terraria 1.4.5.8",
+  "evidenceTier": "locked-native-method-producer-and-receiver",
+  "pluginHash": "B7D9990BF7FA25A51689D3D85D1A498C4CE464E6B13F78B7BD164299A70A4BDF",
+  "runtimeHash": "C7FF9B092B296C86E1EA91B9BA8426E9F4955B4FA62DB7EA7FCFAE2EE3D1D511",
+  "witnesses": [
+    {
+      "label": "native-buffed-melee-0",
+      "source": "locked-native-method-producer-captured-wire",
+      "hex": "0D001C0B0339000000C0400200",
+      "damage": 57,
+      "critical": false,
+      "nativeSource": {
+        "item": 1199,
+        "prefix": 0,
+        "buffs": [
+          117,
+          115
+        ],
+        "baselineDamage": 61,
+        "nativeBuffDamage": 67,
+        "baselineCrit": 4,
+        "nativeBuffCrit": 14,
+        "producer": "SetDefaults -\u003E ResetEffects -\u003E AddBuff(Wrath,Rage) -\u003E UpdateBuffs -\u003E GetWeaponDamage -\u003E ProcessHitAgainstNPC -\u003E DamageVar/native-crit -\u003E StrikeNPC -\u003E SendData28",
+        "randomSeed": 1704,
+        "independentNativeActions": 64,
+        "distinctAmounts": [
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          77
+        ]
+      },
+      "limits": "Native method fixture, not stock GUI or live TCP. The server does not receive the client IEntitySource. Future TCP replay changes target slot/generation only and retains result bytes."
+    },
+    {
+      "label": "native-buffed-melee-1",
+      "source": "locked-native-method-producer-captured-wire",
+      "hex": "0D001C0B034D000000C0400200",
+      "damage": 77,
+      "critical": false,
+      "nativeSource": {
+        "item": 1199,
+        "prefix": 0,
+        "buffs": [
+          117,
+          115
+        ],
+        "baselineDamage": 61,
+        "nativeBuffDamage": 67,
+        "baselineCrit": 4,
+        "nativeBuffCrit": 14,
+        "producer": "SetDefaults -\u003E ResetEffects -\u003E AddBuff(Wrath,Rage) -\u003E UpdateBuffs -\u003E GetWeaponDamage -\u003E ProcessHitAgainstNPC -\u003E DamageVar/native-crit -\u003E StrikeNPC -\u003E SendData28",
+        "randomSeed": 1704,
+        "independentNativeActions": 64,
+        "distinctAmounts": [
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          77
+        ]
+      },
+      "limits": "Native method fixture, not stock GUI or live TCP. The server does not receive the client IEntitySource. Future TCP replay changes target slot/generation only and retains result bytes."
+    },
+    {
+      "label": "native-buffed-melee-2",
+      "source": "locked-native-method-producer-captured-wire",
+      "hex": "0D001C0B033E000000C0400201",
+      "damage": 62,
+      "critical": true,
+      "nativeSource": {
+        "item": 1199,
+        "prefix": 0,
+        "buffs": [
+          117,
+          115
+        ],
+        "baselineDamage": 61,
+        "nativeBuffDamage": 67,
+        "baselineCrit": 4,
+        "nativeBuffCrit": 14,
+        "producer": "SetDefaults -\u003E ResetEffects -\u003E AddBuff(Wrath,Rage) -\u003E UpdateBuffs -\u003E GetWeaponDamage -\u003E ProcessHitAgainstNPC -\u003E DamageVar/native-crit -\u003E StrikeNPC -\u003E SendData28",
+        "randomSeed": 1704,
+        "independentNativeActions": 64,
+        "distinctAmounts": [
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          77
+        ]
+      },
+      "limits": "Native method fixture, not stock GUI or live TCP. The server does not receive the client IEntitySource. Future TCP replay changes target slot/generation only and retains result bytes."
+    }
+  ]
+}

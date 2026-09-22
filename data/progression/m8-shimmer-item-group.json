@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "contractId": "PG-NAT-M8.MoonLordShimmerExecution/1.0.0",
+  "contractKind": "native_transformation_block_and_observation",
+  "productionPermanentBanEligible": false,
+  "targetTerraria": "1.4.5.8",
+  "protocol": 326,
+  "otapiSha256": "C7FF9B092B296C86E1EA91B9BA8426E9F4955B4FA62DB7EA7FCFAE2EE3D1D511",
+  "original72PartialScopes": ["D04", "E01", "E02", "E03"],
+  "selectedMklpGroup": "PG-POL-012",
+  "selectedOutputs": [5134, 5335, 5364],
+  "transformations": [
+    { "input": 1326, "output": 5335 },
+    { "input": 779, "output": 5134 },
+    { "input": 3031, "output": 5364 },
+    { "input": 5364, "output": 3031, "reason": "Native reverse bucket conversion has the same current Moon Lord lock." }
+  ],
+  "source": {
+    "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+    "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+    "path": "MKLP/Modules/SurvivalManager.cs",
+    "lineStart": 1301,
+    "lineEnd": 1331,
+    "operationIds": ["MKLP-OP-125"],
+    "license": "MIT",
+    "reuse": "Reuse already extracted output group identifiers; original source AND/currentbossdefeated policy stays unchanged. New guard is based on separately audited native transformation semantics.",
+    "purpose": "Choose a shared-prerequisite natural item transformation group without introducing an acquisition graph or possession ban.",
+    "tests": ["M8ShimmerItemTransactionTests.SelectedOutputsStayInsideThePreservedMklpGroupWithoutPromotingThePolicy"]
+  },
+  "nativeEntry": "WorldItem.GetShimmered before all writes; ordinary producer WorldItem.UpdateShimmer -> CanShimmerAtPosition -> Item.CanShimmer -> ShimmerTransforms.IsItemTransformLocked",
+  "requiredInputs": ["Verified target fingerprint", "Established update thread and Core world epoch", "Current NPC.downedMoonlord", "Exact selected native transform table entries", "No observed unsupported host extension"],
+  "historySemantics": "Only positive Moon Lord state observed in the current world epoch is retained. A false current flag or unobserved positive is not evidence that this world never defeated Moon Lord. History does not authorize a new transformation against the native current-state gate.",
+  "notCovered": ["All item acquisition paths", "Imported or passive asset ownership", "Authenticated responsibility for world-item transformations", "Automatic permanent bans", "Entity lifetime generations for cleanup or replay", "Other shimmer transformations or decrafting", "Real GUI validation"]
+}

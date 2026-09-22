@@ -1,0 +1,61 @@
+# Local runtime, evidence, packaged output and caches remain outside the public repository.
+**/bin/
+**/obj/
+**/__pycache__/
+**/.pytest_cache/
+**/TestResults/
+*.pyc
+*.trx
+*.log
+*.zip
+*.dll
+*.exe
+*.pdb
+*.wld
+*.sqlite
+*.sqlite3
+
+/.lab/
+/.tools/
+/.agents/
+/.codex/
+/.omo/
+/artifacts/
+/cheattools/
+/prompts/
+/scripts/
+/data/runtime/
+/manifest.json
+/AGENTS.md
+/START_HERE.md
+/CHANGELOG.md
+/Codex-M16-Plus-Major-Coverage-Goal.md
+
+# The public entry is README.md. Historical reports remain in the local archive.
+/docs/*
+!/docs/m3-target-ledger.json
+
+# Keep only the current scope handoff, not its older proposals.
+/anticheat-scope-handoff/*
+!/anticheat-scope-handoff/AntiCheat-M18-PostScope-Master.md
+!/anticheat-scope-handoff/AntiCheat-M18-Scope72-Map.md
+
+# Only the MIT fixtures and their provenance metadata are redistributed.
+/reference/*
+!/reference/source-lock.json
+!/reference/mklp/
+/reference/mklp/*
+!/reference/mklp/LICENSE
+!/reference/mklp/MKLP/
+/reference/mklp/MKLP/*
+!/reference/mklp/MKLP/Config.cs
+!/reference/mklp/MKLP/Modules/
+/reference/mklp/MKLP/Modules/*
+!/reference/mklp/MKLP/Modules/SurvivalManager.cs
+
+# Old milestone notes are superseded by the root README and current scope files.
+/src/AntiCheat.Plugin.TShock/README.md
+/tools/**/README.md
+/tests/**/README.md
+/tests/M5PackageScript.Tests.ps1
+/tools/AntiCheat.RuleExtraction/Verify-References.ps1

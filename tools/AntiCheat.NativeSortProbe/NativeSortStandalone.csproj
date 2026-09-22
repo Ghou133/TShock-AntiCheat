@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier><SelfContained>false</SelfContained>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>NativeSortCorpus</AssemblyName>
+    <CandidateDir Condition="'$(CandidateDir)' == ''">$(MSBuildThisFileDirectory)..\..\.lab\runtime-m12-r2\win-x64-framework-dependent</CandidateDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="NativeStorageCorpus.cs" />
+    <PackageReference Include="OTAPI.Upcoming" Version="3.3.14" />
+    <Reference Include="OTAPI"><HintPath>$(CandidateDir)\bin\OTAPI.dll</HintPath><Private>true</Private></Reference>
+    <Reference Include="ModFramework"><HintPath>$(CandidateDir)\bin\ModFramework.dll</HintPath><Private>true</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireLockedCandidate" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(CandidateDir)\bin\OTAPI.dll')" Text="Provide the actual audited 1.4.5.8 CandidateDir; native stubs are forbidden." />
+  </Target>
+</Project>

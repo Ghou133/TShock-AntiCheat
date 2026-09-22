@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>GameplayScaffold</AssemblyName>
+    <Version>1.0.2</Version>
+    <CandidateDir Condition="'$(CandidateDir)' == ''">$(MSBuildThisFileDirectory)..\..\.lab\runtime-m12-r2\win-x64-framework-dependent</CandidateDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AntiCheat.Core\AntiCheat.Core.csproj" />
+    <Reference Include="OTAPI"><HintPath>$(CandidateDir)\bin\OTAPI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ModFramework"><HintPath>$(CandidateDir)\bin\ModFramework.dll</HintPath><Private>false</Private></Reference>
+    <PackageReference Include="MonoMod.RuntimeDetour" Version="25.2.3" IncludeAssets="compile" PrivateAssets="all" />
+    <Reference Include="TerrariaServer"><HintPath>$(CandidateDir)\bin\TerrariaServer.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TShockAPI"><HintPath>$(CandidateDir)\ServerPlugins\TShockAPI.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(CandidateDir)\bin\OTAPI.dll')" Text="Build the final candidate first, or pass -p:CandidateDir=absolute-candidate-directory." />
+  </Target>
+</Project>

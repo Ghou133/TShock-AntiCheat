@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "target": "Terraria 1.4.5.8",
+  "evidenceTier": "locked-native-method-producer-and-receiver",
+  "pluginHash": "B7D9990BF7FA25A51689D3D85D1A498C4CE464E6B13F78B7BD164299A70A4BDF",
+  "runtimeHash": "C7FF9B092B296C86E1EA91B9BA8426E9F4955B4FA62DB7EA7FCFAE2EE3D1D511",
+  "witnesses": [
+    {
+      "label": "native-beenade-bee-child",
+      "source": "locked-native-method-producer-captured-wire",
+      "hex": "0D001C0B030B00000000000200",
+      "damage": 11,
+      "critical": false,
+      "nativeSource": {
+        "item": 1130,
+        "weaponDamage": 12,
+        "parentType": 183,
+        "parentDamage": 12,
+        "parentKey": 262151,
+        "childType": 181,
+        "childDamage": 13,
+        "childKey": 262407,
+        "childCount": 21,
+        "sourceTypes": [
+          {
+            "Type": 183,
+            "Key": 262151,
+            "Source": "Terraria.DataStructures.EntitySource_ItemUse_WithAmmo"
+          },
+          {
+            "Type": 181,
+            "Key": 262407,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 262663,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 262919,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 263175,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 263431,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 263687,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 263943,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 264199,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 264455,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 264711,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 264967,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 265223,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 265479,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 265735,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 265991,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 266247,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 266503,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 266759,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 267015,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 267271,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          },
+          {
+            "Type": 181,
+            "Key": 267527,
+            "Source": "Terraria.DataStructures.EntitySource_Parent"
+          }
+        ],
+        "producer": "Beenade SetDefaults -\u003E ItemCheck_Shoot -\u003E NewProjectile(ItemUse) -\u003E parent.Kill -\u003E NewProjectile(EntitySource_Parent) -\u003E beeDamage -\u003E Bee.Damage -\u003E Damage_PVE -\u003E StrikeNPC -\u003E SendData28",
+        "randomSeed": 1704,
+        "physicalSetup": "parent.Center = native core.Center before real Kill; no damage/type override"
+      },
+      "limits": "Native method fixture, not stock GUI or live TCP. The server does not receive the client IEntitySource. Future TCP replay changes target slot/generation only and retains result bytes."
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../AntiCheat.Core/AntiCheat.Core.csproj" /></ItemGroup>
+</Project>

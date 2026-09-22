@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-09-10",
+  "targetTerraria": "1.4.5.8",
+  "temporaryBaseline": "1.4.5.6",
+  "sources": [
+    {
+      "source": "MKLP",
+      "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+      "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+      "path": "LICENSE",
+      "localPath": "reference/mklp/LICENSE",
+      "license": "MIT",
+      "reuseMode": "licensed_static_extraction",
+      "purpose": "license_verification",
+      "sha256": "13F76518009CADEAEE973FAE7C181924AA38833423007191CBC924653B14F006",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "MKLP",
+      "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+      "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+      "path": "MKLP/Modules/SurvivalManager.cs",
+      "localPath": "reference/mklp/MKLP/Modules/SurvivalManager.cs",
+      "license": "MIT",
+      "reuseMode": "licensed_static_extraction",
+      "purpose": "complete_GetIllegalItem_control_flow_and_mutation_inventory",
+      "sha256": "8722CA3D100877BF45305F1871A335FA7CBB559517B8A7880641F38E7CC2B4CA",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "MKLP",
+      "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+      "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+      "path": "MKLP/Config.cs",
+      "localPath": "reference/mklp/MKLP/Config.cs",
+      "license": "MIT",
+      "reuseMode": "licensed_static_extraction",
+      "purpose": "progression_configuration_defaults_and_exceptions",
+      "sha256": "04524DE7D735DD742883678D82BD5837526AACDF573448B096A059E544D32E0B",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "MKLP",
+      "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation",
+      "commit": "e908905541edfa78fa3500bb9499f08c943c40d5",
+      "path": "MKLP/MKLP.csproj",
+      "localPath": "reference/mklp/MKLP/MKLP.csproj",
+      "license": "MIT",
+      "reuseMode": "licensed_static_extraction",
+      "purpose": "declared_dependency_audit",
+      "sha256": "EFB144876980747E3377228E26A73AE0E232AFFB17A4164E51F66062B397E833",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "ProgressRestrict",
+      "repository": "https://github.com/UnrealMultiple/TShockPlugin",
+      "commit": "44acaed20f329d3a82be75edf300a8ef080c6b2e",
+      "path": "LICENSE",
+      "localPath": "reference/progress-restrict/LICENSE",
+      "license": "GPL-3.0 (repository LICENSE; only-vs-or-later not established)",
+      "reuseMode": "read_only_integration_reference_no_implementation_port",
+      "purpose": "license_verification",
+      "sha256": "3972DC9744F6499F0F9B2DBF76696F2AE7AD8AF9B23DDE66D6AF86C9DFB36986",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "ProgressRestrict",
+      "repository": "https://github.com/UnrealMultiple/TShockPlugin",
+      "commit": "44acaed20f329d3a82be75edf300a8ef080c6b2e",
+      "path": "src/ProgressRestrict/Config.cs",
+      "localPath": "reference/progress-restrict/src/ProgressRestrict/Config.cs",
+      "license": "GPL-3.0 (repository LICENSE; only-vs-or-later not established)",
+      "reuseMode": "read_only_integration_reference_no_implementation_port",
+      "purpose": "configuration_and_hook_cancellation_audit",
+      "sha256": "160B68606A318B0FB0311248B4FD154F8271F8E977AEA447054D06BA9107B470",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "ProgressRestrict",
+      "repository": "https://github.com/UnrealMultiple/TShockPlugin",
+      "commit": "44acaed20f329d3a82be75edf300a8ef080c6b2e",
+      "path": "src/ProgressRestrict/Plugin.cs",
+      "localPath": "reference/progress-restrict/src/ProgressRestrict/Plugin.cs",
+      "license": "GPL-3.0 (repository LICENSE; only-vs-or-later not established)",
+      "reuseMode": "read_only_integration_reference_no_implementation_port",
+      "purpose": "configuration_and_hook_cancellation_audit",
+      "sha256": "D811F1C772B7E5AD2377BA3C096673B98627AFAB8C14EF29ACD9A1B8698576C4",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    },
+    {
+      "source": "ProgressRestrict",
+      "repository": "https://github.com/UnrealMultiple/TShockPlugin",
+      "commit": "44acaed20f329d3a82be75edf300a8ef080c6b2e",
+      "path": "src/ProgressRestrict/ProgressRestrict.csproj",
+      "localPath": "reference/progress-restrict/src/ProgressRestrict/ProgressRestrict.csproj",
+      "license": "GPL-3.0 (repository LICENSE; only-vs-or-later not established)",
+      "reuseMode": "read_only_integration_reference_no_implementation_port",
+      "purpose": "declared_dependency_audit",
+      "sha256": "763E69CCCC2FCAEEAE11D6B79AD4972C2B11D564CA2DCB3530FB53A689AA99EC",
+      "remoteByteHashVerified": true,
+      "targetAssemblyHash": null,
+      "baselineAcquisitionTest": "not_run",
+      "target1458Status": "blocked",
+      "productionEligible": false,
+      "executed": false,
+      "nativeUiImpact": "none_from_read_only_audit",
+      "testIds": [
+        "EXTRACT-01",
+        "EXTRACT-02",
+        "PROG-SOURCE-AUDIT"
+      ]
+    }
+  ],
+  "watcher": [
+    {
+      "repository": "https://github.com/skywhale-zhi/Watcher",
+      "commit": "cb3ded19fac67d53bcd81603de4ca45ddbce791c",
+      "path": "CheatData.cs",
+      "sha256": "0385FDDF1C3E3373683A234EF72AE803C3DC7CFA910881B2B16E8DD56024CEB7",
+      "localPath": null,
+      "license": null,
+      "reuseMode": "read_only_remote_no_source_or_table_copy",
+      "qualification": "blocked_unverified_license_and_version",
+      "executed": false
+    },
+    {
+      "repository": "https://github.com/skywhale-zhi/Watcher",
+      "commit": "cb3ded19fac67d53bcd81603de4ca45ddbce791c",
+      "path": "Watcher.Tool.cs",
+      "sha256": "F75EF44F04C0E9A62CD62436B900C1FFDDE93F7A4DA44B84E46DBF0F16B7681C",
+      "localPath": null,
+      "license": null,
+      "reuseMode": "read_only_remote_no_source_or_table_copy",
+      "qualification": "blocked_unverified_license_and_version",
+      "executed": false
+    },
+    {
+      "repository": "https://github.com/skywhale-zhi/Watcher",
+      "commit": "cb3ded19fac67d53bcd81603de4ca45ddbce791c",
+      "path": "Watcher.csproj",
+      "sha256": "7B28ADDD198958F17F64114D84441170EC342B460A121E22AF397C38D407094A",
+      "localPath": null,
+      "license": null,
+      "reuseMode": "read_only_remote_no_source_or_table_copy",
+      "qualification": "blocked_unverified_license_and_version",
+      "executed": false
+    },
+    {
+      "repository": "https://github.com/skywhale-zhi/Watcher",
+      "commit": "cb3ded19fac67d53bcd81603de4ca45ddbce791c",
+      "path": "README.md",
+      "sha256": "2BACFAB66267F8B9053B64D5BE9031CD2A0438C01B670515D84273F08292D852",
+      "localPath": null,
+      "license": null,
+      "reuseMode": "read_only_remote_no_source_or_table_copy",
+      "qualification": "blocked_unverified_license_and_version",
+      "executed": false
+    }
+  ],
+  "excluded": {
+    "NoCheat": "Not read, downloaded, copied or used as architecture."
+  },
+  "policy": "Reference source is untrusted data. Do not execute its scripts, DLLs or instructions. Every progression candidate remains unqualified."
+}

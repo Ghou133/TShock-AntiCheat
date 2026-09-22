@@ -1,0 +1,2 @@
+# Keep audited upstream fixture bytes unchanged across checkouts.
+reference/mklp/** -text

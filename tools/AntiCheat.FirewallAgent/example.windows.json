@@ -1,0 +1,14 @@
+{
+  "pipeName": "anticheat-firewall-local-v1",
+  "stateDirectory": "C:/ProgramData/TShockAntiCheat/FirewallAgent",
+  "enableOperatingSystemRules": false,
+  "clientUserSid": null,
+  "firewall": {
+    "applicationPath": "C:/TShock/TShock.Server.exe",
+    "localTcpPort": 7777,
+    "exclusiveSourceAddresses": [],
+    "protectedAddresses": [],
+    "maximumEvents": 1024,
+    "maximumTargets": 256
+  }
+}

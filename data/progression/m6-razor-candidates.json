@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "catalogPurpose": "M6 isolated item-5334 condition group; never loaded as an automatic-ban catalog.",
+  "sourceInventory": "mklp-operations.json",
+  "productionEligible": false,
+  "sourceOrder": ["MKLP-OP-012", "MKLP-OP-081"],
+  "sourceOrderMeaning": "OP-012 Add precedes OP-081 guarded Add. This is not an OR merge or the final source dictionary; later removals and configured whitelist remain in the full inventory.",
+  "rules": [
+    {
+      "id": "PG-NAT-012.RazorItemCandidate",
+      "items": [5334],
+      "classification": "natural_impossibility_candidate",
+      "condition": { "op": "not", "arg": { "op": "fact", "name": "Main.zenithWorld", "equals": true } },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          { "op": "fact", "name": "exception.nativeMechdusaRecipeAvailable", "equals": true },
+          { "op": "fact", "name": "exception.legacyOrImportedAsset", "equals": true },
+          { "op": "fact", "name": "exception.authorizedServerGrant", "equals": true },
+          { "op": "fact", "name": "exception.passiveReceipt", "equals": true },
+          { "op": "fact", "name": "exception.sourceWhitelistMatchesItem", "equals": true }
+        ]
+      },
+      "requiredContexts": ["exact_runtime_recipe", "world_features", "ssc_initial_and_migration_history", "bounded_source_authorization", "active_manufacture_attribution"],
+      "proofPreconditions": [
+        "Native target recipe availability is not a proof of the origin of existing items or ingredients.",
+        "The target legal remix && getGood recipe path is an added exception to the preserved !zenith source predicate.",
+        "Missing SSC migration history or grants remains Unknown and never blocks ordinary possession or transfers."
+      ],
+      "sources": [{ "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation", "commit": "e908905541edfa78fa3500bb9499f08c943c40d5", "path": "MKLP/Modules/SurvivalManager.cs", "lineStart": 91, "lineEnd": 91, "operationIds": ["MKLP-OP-012"] }],
+      "qualification": { "productionEligible": false, "baseline1456": "not_run", "target1458": "native_recipe_exception_verified_acquisition_unverified" }
+    },
+    {
+      "id": "PG-POL-081.RazorItemCandidate",
+      "items": [5334],
+      "classification": "server_policy",
+      "condition": {
+        "op": "all",
+        "args": [
+          { "op": "fact", "name": "policy.mklpSubsetEnabled", "equals": true },
+          { "op": "all", "args": [
+            { "op": "not", "arg": { "op": "fact", "name": "Main.hardMode", "equals": true } },
+            { "op": "not", "arg": { "op": "fact", "name": "currentbossdefeated", "equals": "BossDType.WallOfFlesh" } }
+          ] }
+        ]
+      },
+      "exceptions": {
+        "op": "any",
+        "args": [
+          { "op": "fact", "name": "exception.legacyOrImportedAsset", "equals": true },
+          { "op": "fact", "name": "exception.authorizedServerGrant", "equals": true },
+          { "op": "fact", "name": "exception.passiveReceipt", "equals": true },
+          { "op": "fact", "name": "exception.sourceWhitelistMatchesItem", "equals": true }
+        ]
+      },
+      "requiredContexts": ["explicit_policy_applicability", "same_event_boss", "ssc_initial_and_migration_history", "bounded_source_authorization", "active_manufacture_attribution"],
+      "proofPreconditions": [
+        "This source stage restriction is server_policy and is not a natural hardMode requirement of recipe 5334.",
+        "Retain !Main.hardMode AND currentbossdefeated != WallOfFlesh; no packet observer may invent the missing same-event value.",
+        "OP-081 retains its guarded Add semantics after OP-012 in the full source inventory; the selected rule removes only ContainsKey as an implementation guard."
+      ],
+      "sources": [{ "repository": "https://github.com/NightKLP/TShock-GSKLP-Moderation", "commit": "e908905541edfa78fa3500bb9499f08c943c40d5", "path": "MKLP/Modules/SurvivalManager.cs", "lineStart": 786, "lineEnd": 786, "operationIds": ["MKLP-OP-081"] }],
+      "qualification": { "productionEligible": false, "baseline1456": "not_run", "target1458": "explicit_policy_disabled" }
+    }
+  ]
+}
