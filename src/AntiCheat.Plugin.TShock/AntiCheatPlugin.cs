@@ -23,10 +23,11 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         private int _revokedPacketReported;
         private int _buffPassReported;
         private readonly HashSet<string> _reportedBusiness = [];
-        public bool TryReportBusiness(BusinessRuleResult result)
+        public bool TryReportBusiness(BusinessRuleResult result, string? discriminator = null)
         {
             lock (_reportedBusiness)
-                return _reportedBusiness.Count < 96 && _reportedBusiness.Add(result.RuleId + "/" + result.Verdict + "/" + result.Reason);
+                return _reportedBusiness.Count < 96 && _reportedBusiness.Add(
+                    result.RuleId + "/" + result.Verdict + "/" + result.Reason + "/" + discriminator);
         }
         public void ResetReportedBusiness() { lock (_reportedBusiness) _reportedBusiness.Clear(); }
         public bool TryReportRevokedPacket() => Interlocked.Exchange(ref _revokedPacketReported, 1) == 0;
@@ -60,11 +61,15 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
     private readonly BoundedRateLimiter _bytes = new(TimeProvider.System,
         new RateLimitOptions(256, 1024 * 1024, 256 * 1024, TimeSpan.FromMinutes(15)));
     private FileEnforcementJournal? _journal;
+    private M18ObservationJournal? _m18ObservationJournal;
     private AntiCheatEngine? _engine;
     private Task? _operation;
     private RuntimeStatus _runtime = new(false, "unknown", "not-initialized");
     private TargetRuntimeStatus _targetRuntime = new(false, "unknown", "unknown", "not-initialized");
     private ExecutionScope _scope;
+    private M18CandidateMode _m18CandidateMode;
+    private bool _m18ObservationActive;
+    private bool _m18CandidateActive;
     private int _productionHardRuleCount;
     private M2BusinessAdapter? _business;
     private M3InventoryContexts? _inventory;
@@ -82,6 +87,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
     private M16CombatLabDiagnostics? _combatLabDiagnostics;
     private long _nextLabLifecycleFlush;
     private M4VitalContexts? _vitals;
+    private M18LockHealthContext? _lockHealth;
     private M3ProgressionPolicy? _progressionPolicy;
     private M5ProgressionContexts? _naturalProgression;
     private M6WiringExecutionGuard? _wiringExecution;
@@ -100,6 +106,18 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
     private long _unknownCandidates;
     private long _blockedMalformed;
     private long _maxDispatchTicks;
+    private int _particleRuntimeDiagnosticWritten;
+    private int _m18P0DWorldRuleDiagnosticMask;
+    private int _m18GroundItemPacketDiagnosticCount;
+    private int _m18RootConnectDiagnosticCount;
+    private readonly object _m18GroundItemPostStateLock = new();
+    private readonly Queue<(M18GroundItemPacketTrace Trace, BusinessRuleResult Result)> _m18GroundItemPostStates = [];
+    private int _m18GroundItemPostStateDropped;
+    private long _m18GroundItemPostUpdateCount;
+    private long _m4VitalsUpdateCount;
+    private int _m18ServerSendDiagnosticCount;
+    private int _m18PacketStageDiagnosticCount;
+    private long _m18GameUpdateDiagnosticCount;
 
     public AntiCheatPlugin(Main game) : base(game)
     {
@@ -120,16 +138,67 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         _targetRuntime = TargetRuntime.Inspect();
         var (configuration, configurationReason) = M2Configuration.Load(ServerTShock.SavePath, Netplay.ServerIP);
         _scope = _targetRuntime.Verified ? configuration.ExecutionScope : ExecutionScope.ObserveOnly;
+        _m18CandidateMode = configuration.M18CandidateMode;
+        var m18WorldEditOptions = M18WorldEditQueueOptions.ForExecutionScope(_scope,
+            configuration.M18CandidateMode, configuration.M18RecordObservations, configuration.M18EnableBlocks);
+        var m18ParticleOptions = M18ParticleQueueOptions.ForExecutionScope(_scope,
+            configuration.M18CandidateMode, configuration.M18RecordObservations, configuration.M18EnableBlocks);
+        var m18ImportantItemOptions = M18ImportantItemQueueOptions.ForExecutionScope(_scope,
+            configuration.M18CandidateMode, configuration.M18RecordObservations);
+        var m18GroundItemClearOptions = M18GroundItemClearQueueOptions.ForExecutionScope(_scope,
+            configuration.M18CandidateMode, configuration.M18RecordObservations, configuration.M18EnableBlocks,
+            configuration.M18EnablePermanentSanctions);
+        var m18NpcStrikeOptions = M18NpcStrikeQueueOptions.ForExecutionScope(_scope,
+            configuration.M18CandidateMode, configuration.M18RecordObservations, configuration.M18EnableBlocks,
+            configuration.M18EnablePermanentSanctions);
+        var m18ServiceKick = configuration.M18EnableServiceKick ??
+            (configuration.M18CandidateMode == M18CandidateMode.Auto && _scope == ExecutionScope.TestLab);
+        var m18LockHealthOptions = M18LockHealthOptions.ForExecutionScope(_scope,
+            configuration.M18CandidateMode, configuration.M18RecordObservations, configuration.M18EnableBlocks,
+            m18ServiceKick);
+        _m18ObservationActive = _targetRuntime.Verified &&
+            (m18WorldEditOptions.Enabled || m18ParticleOptions.Enabled ||
+             m18ImportantItemOptions.Enabled || m18GroundItemClearOptions.Enabled ||
+             m18NpcStrikeOptions.Enabled || m18LockHealthOptions.Enabled);
+        _m18CandidateActive = _targetRuntime.Verified &&
+            M18ExecutionModePolicy.CandidateControlsEnabled(_scope, configuration.M18CandidateMode) &&
+            (m18WorldEditOptions.Enabled || m18ParticleOptions.Enabled ||
+             m18GroundItemClearOptions.Enabled || m18NpcStrikeOptions.Enabled || m18LockHealthOptions.Enabled);
         if (_targetRuntime.Verified)
         {
-            try { _business = new(_targetRuntime.Fingerprint, Path.Combine(AppContext.BaseDirectory, "data", "progression")); }
+            try { _business = new(_targetRuntime.Fingerprint, Path.Combine(AppContext.BaseDirectory, "data", "progression"),
+                m18WorldEditOptions, m18ParticleOptions,
+                m18ImportantItemOptions, M18ImportantItemCatalog.Items,
+                m18GroundItemClearOptions,
+                enablePermanentSanctionCandidates: m18NpcStrikeOptions.EnablePermanentSanctions); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidDataException)
             {
                 ServerApi.LogWriter.PluginWriteLine(this, "AntiCheat progression catalog unavailable: " + ex.GetType().Name, TraceLevel.Warning);
-                _business = new(_targetRuntime.Fingerprint, Path.Combine(ServerTShock.SavePath, "absent-candidate-data"));
+                _business = new(_targetRuntime.Fingerprint, Path.Combine(ServerTShock.SavePath, "absent-candidate-data"),
+                m18WorldEditOptions, m18ParticleOptions,
+                    m18ImportantItemOptions, M18ImportantItemCatalog.Items,
+                    m18GroundItemClearOptions,
+                    enablePermanentSanctionCandidates: m18NpcStrikeOptions.EnablePermanentSanctions);
             }
         }
         StartRecovery();
+        try
+        {
+            _m18ObservationJournal = new M18ObservationJournal(
+                Path.Combine(ServerTShock.SavePath, "anticheat", "m18-observations.json"));
+        }
+        catch (Exception error)
+        {
+            // Observation persistence is a health signal only. The existing
+            // packet and sanction paths remain independently bounded.
+            ReportContextFault("M18ObservationJournal", error);
+        }
+        if (_business is not null)
+        {
+            _business.ImportantItemObservationRecorded = RecordM18ImportantItemObservation;
+            _business.GroundItemPacketObserved = RecordM18GroundItemPacket;
+            _business.GroundItemDecisionObserved = QueueM18GroundItemPostState;
+        }
         if (_targetRuntime.Verified && _business is not null)
         {
             _business.IntegrityFault = OnBusinessIntegrityFault;
@@ -191,7 +260,18 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                     ReportContextFault("ArrowResetInputs", error);
                 }
             }
-            _npcStrikeCauses = new M7NpcStrikeCauseContexts(_targetRuntime.Fingerprint) { IntegrityFault = DisableNpcStrikeCauses };
+            _npcStrikeCauses = new M7NpcStrikeCauseContexts(_targetRuntime.Fingerprint,
+                m18NpcStrikeOptions,
+                m18ImportantItemOptions,
+                M18ImportantItemCatalog.Items)
+            {
+                IntegrityFault = DisableNpcStrikeCauses,
+                OptionalRewardObservationFault = error => ReportContextFault("M18ImportantItemRewardObserver", error),
+                StrikeObservationRecorded = RecordM18StrikeObservation,
+                StrikeCompletionRecorded = RecordM18StrikeCompletion,
+                ImportantItemRewardObserved = RecordM18RewardObservation,
+                SummonAuxiliaryContext = session => _summonBudget?.CaptureNpcStrikeAuxiliary(session),
+            };
             RunNpcStrikeCauses(context => context.Install());
             _npcImmunity = new(_targetRuntime.Fingerprint, slot =>
             {
@@ -293,12 +373,24 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                 _liquidExecution = null;
                 ReportContextFault("LiquidExecution", error);
             }
-            _vitals = new M4VitalContexts(_targetRuntime.Fingerprint) { IntegrityFault = DisableVitals };
+            _vitals = new M4VitalContexts(_targetRuntime.Fingerprint)
+            {
+                IntegrityFault = DisableVitals,
+                SendDataObserved = RecordM18ServerSend,
+            };
             RunVitals(context => context.Install(slot =>
             {
                 var binding = GetBinding(slot);
                 return (binding is null ? null : _engine?.GetSession(binding.Key), binding?.Player);
             }));
+            _lockHealth = new(TimeProvider.System, _targetRuntime.Fingerprint,
+                m18LockHealthOptions)
+            { IntegrityFault = error => ReportContextFault("LockHealthCandidate", error) };
+            _lockHealth.Install(slot =>
+            {
+                var binding = GetBinding(slot);
+                return (binding is null ? null : _engine?.GetSession(binding.Key), binding?.Player);
+            });
             try
             {
                 _progressionPolicy = M3ProgressionPolicy.Load(ServerTShock.SavePath,
@@ -316,6 +408,44 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                 {
                     Runtime = _targetRuntime,
                     Scope = _scope.ToString(),
+                    M18Candidates = new
+                    {
+                        RequestedMode = _m18CandidateMode.ToString(),
+                        Active = _m18CandidateActive,
+                        ObservationActive = _m18ObservationActive,
+                        RecordMode = "Auto records in ObserveOnly/Production/TestLab; explicit candidate modes require their matching scope",
+                        CandidateControlMode = _m18CandidateActive ? "candidate-controls-enabled" : "record-only-or-disabled",
+                        RecordObservations = configuration.M18RecordObservations,
+                        Blocks = configuration.M18EnableBlocks,
+                        ServiceKick = m18LockHealthOptions.EnableServiceKick,
+                        PermanentSanctions = m18NpcStrikeOptions.EnablePermanentSanctions,
+                        ConfigurationReason = configurationReason,
+                        NpcStrikeQueue = m18NpcStrikeOptions.Enabled,
+                        WorldEditQueue = m18WorldEditOptions.Enabled,
+                        ParticleQueue = m18ParticleOptions.Enabled,
+                        ImportantItemQueue = m18ImportantItemOptions.Enabled,
+                        GroundItemClearQueue = m18GroundItemClearOptions.Enabled,
+                        LockHealth = m18LockHealthOptions.Enabled,
+                        ObservationJournal = new
+                        {
+                            Installed = _m18ObservationJournal is not null,
+                            Healthy = _m18ObservationJournal?.Healthy == true,
+                            Path = "anticheat/m18-observations.json",
+                            StrikeBuckets = _m18ObservationJournal?.StrikeBucketCount ?? 0,
+                            ImportantItemBuckets = _m18ObservationJournal?.ImportantItemBucketCount ?? 0,
+                            ErrorType = _m18ObservationJournal?.LastErrorType,
+                        },
+                        Vitals = new
+                        {
+                            Installed = _vitals?.Installed == true,
+                            Failed = _vitals?.Failed == true,
+                            InstallThreadId = _vitals?.InstallThreadId ?? 0,
+                            LastTickThreadId = _vitals?.LastTickThreadId ?? 0,
+                            TickCount = _vitals?.TickCount ?? 0,
+                            HurtPluginObservationHealthy = _vitals?.HurtPluginObservationHealthy == true,
+                            Note = "Own lifecycle state; ObservationJournal health is reported separately."
+                        },
+                    },
                     QualifiedRules = M2RuleRegistry.Create(_targetRuntime, _scope, _business?.ProgressionRuleIds)
                         .Where(rule => rule.Qualification == RuleQualification.ProductionQualified)
                         .Select(rule => new { rule.RuleId, rule.Version, rule.AuditReference }).ToArray(),
@@ -397,6 +527,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         ServerApi.Hooks.NetGetData.Register(this, OnGetData, 1000);
         ServerApi.Hooks.ServerChat.Register(this, OnChat, 1000);
         ServerApi.Hooks.GameUpdate.Register(this, OnUpdate, -1000);
+        ServerApi.Hooks.GamePostUpdate.Register(this, OnPostUpdate, -1000);
         // Dedicated-server main loop skips GameUpdate when the last client leaves.
         // Its idle callback is still on the verified main thread; only infrastructure
         // maintenance may run there, never a fabricated gameplay/context tick.
@@ -416,7 +547,8 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         ServerApi.LogWriter.PluginWriteLine(this, $"{ReadyMarker} target=1.4.5.8 runtime={_runtime.GameVersion} " +
             $"exactTemporaryBaseline={_runtime.ExactTemporaryBaseline} dotnetVersion={Environment.Version} " +
             $"frameworkDescription=\"{RuntimeInformation.FrameworkDescription}\" scope={_scope} runtimeVerified={_targetRuntime.Verified} m2=true " +
-            $"productionHardRules={_productionHardRuleCount} reason={_targetRuntime.Reason} configuration={configurationReason}", TraceLevel.Info);
+            $"productionHardRules={_productionHardRuleCount} m18Candidate={_m18CandidateActive} " +
+            $"reason={_targetRuntime.Reason} configuration={configurationReason}", TraceLevel.Info);
     }
 
     private void StartRecovery()
@@ -505,18 +637,19 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
 
     private void OnConnect(ConnectEventArgs args)
     {
-        if (args.Handled) { _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.EarlierHandled); return; }
+        TraceM18RootConnect(args, "entry");
+        if (args.Handled) { _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.EarlierHandled); TraceM18RootConnect(args, "earlier-handled"); return; }
         if (args.Who < 0 || args.Who >= _bindings.Length || Maintenance)
         {
             args.Handled = true;
-            _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.InvalidSlotOrMaintenance);
+            _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.InvalidSlotOrMaintenance); TraceM18RootConnect(args, "invalid-slot-or-maintenance");
             return;
         }
         var player = ServerTShock.Players[args.Who];
-        if (player is null) { _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.MissingPlayer); return; }
+        if (player is null) { _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.MissingPlayer); TraceM18RootConnect(args, "missing-player"); return; }
         lock (_bindingsLock)
         {
-            if (_preHelloDeadlines.IsTerminal(args.Who)) { args.Handled = true; return; }
+            if (_preHelloDeadlines.IsTerminal(args.Who)) { args.Handled = true; TraceM18RootConnect(args, "prehello-terminal"); return; }
             var old = _bindings[args.Who];
             if (old is not null && ReferenceEquals(old.Player, player) &&
                 (!old.NetworkRegistered || old.NetworkTransport?.MatchesCurrent(old.Key, player) == true))
@@ -524,6 +657,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                 if (!_engine!.CanWrite(old.Key)) args.Handled = true;
                 _labConnections?.ObserveRootConnect(args.Who, args.Handled ?
                     RootConnectBoundary.ExistingPlayerRevoked : RootConnectBoundary.ExistingPlayerAccepted);
+                TraceM18RootConnect(args, args.Handled ? "existing-revoked" : "existing-accepted");
                 return;
             }
             var key = _engine!.OpenSession(args.Who);
@@ -531,6 +665,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             {
                 args.Handled = true;
                 _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.SessionCapacityRejected);
+                TraceM18RootConnect(args, "session-capacity-rejected");
                 return;
             }
             if (old is not null) _bytes.Forget(old.RateKey);
@@ -544,6 +679,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                     args.Handled = true;
                     _engine.Disconnect(key.Value);
                     _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.NetworkBudgetRejected);
+                    TraceM18RootConnect(args, "network-budget-rejected");
                     return;
                 }
                 binding.NetworkRegistered = true;
@@ -556,7 +692,25 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             RunArrowCandidates(context => context.Connected(binding.Key));
             RunNaturalProgression(context => context.ObserveConnection(binding.Key, player));
             _labConnections?.ObserveRootConnect(args.Who, RootConnectBoundary.BindingAccepted);
+            TraceM18RootConnect(args, "binding-accepted");
         }
+    }
+
+    private void TraceM18RootConnect(ConnectEventArgs args, string stage)
+    {
+        if (!_m18CandidateActive || Volatile.Read(ref _m18RootConnectDiagnosticCount) >= 64) return;
+        try
+        {
+            int slot = args.Who;
+            var client = (uint)slot < Netplay.Clients.Length ? Netplay.Clients[slot] : null;
+            string player = (uint)slot < ServerTShock.Players.Length && ServerTShock.Players[slot] is not null ? "present" : "none";
+            if (Interlocked.Increment(ref _m18RootConnectDiagnosticCount) > 64) return;
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_ROOT_CONNECT stage={stage} slot={slot} handled={args.Handled} maintenance={Maintenance} " +
+                $"player={player} clientState={client?.State.ToString() ?? "none"} socket={(client?.Socket is null ? "none" : client.Socket.GetType().Name)} " +
+                $"pending={client?.PendingTermination} approved={client?.PendingTerminationApproved}", TraceLevel.Info);
+        }
+        catch { }
     }
 
     private Binding? GetBinding(int slot)
@@ -597,6 +751,9 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             // A revoked connection remains revoked until an actual leave/new connection.
             if (!_engine!.CanWrite(binding.Key)) return;
             _engine.Disconnect(binding.Key);
+            RunNpcStrikeCauses(context => context.Forget(binding.Key));
+            _business?.Forget(binding.Key);
+            _lockHealth?.Forget(binding.Key);
             RunArrowCandidates(context => context.Left(binding.Key));
             RunInventory(context => context.Forget(binding.Key));
             RunSummonBudget(context => context.Forget(binding.Key));
@@ -631,6 +788,9 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         {
             if (!ReferenceEquals(_bindings[args.Who], binding)) return;
             _engine?.Disconnect(binding.Key);
+            RunNpcStrikeCauses(context => context.Forget(binding.Key));
+            _business?.Forget(binding.Key);
+            _lockHealth?.Forget(binding.Key);
             RunArrowCandidates(context => context.Left(binding.Key));
             RunInventory(context => context.Forget(binding.Key));
             RunSummonBudget(context => context.Forget(binding.Key));
@@ -647,6 +807,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         {
             _engine?.AdvanceWorld();
             _business?.ResetWorld();
+            _lockHealth?.ResetWorld();
             RunProgression(context => context.ResetWorld());
             RunNaturalProgression(context => context.ResetWorld());
             RunArrowCandidates(context => context.ResetWorld());
@@ -696,7 +857,9 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
     private void OnGetData(GetDataEventArgs args)
     {
         var binding = GetBinding(args.Msg.whoAmI);
-        if (binding?.TimeoutTerminationRequested == true) { args.Handled = true; return; }
+        RecordM18PacketStage(args, binding, "entry");
+        TraceM18Handshake(args, binding, "entry");
+        if (binding?.TimeoutTerminationRequested == true) { args.Handled = true; TraceM18Handshake(args, binding, "timeout"); return; }
         if (binding is not null) RunSummonBudget(context => context.ObserveIncoming(binding.Key, args));
         if (Maintenance)
         {
@@ -709,6 +872,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             if (ping)
                 ping = _network.Consume(binding!.Key, 3, NetworkRequestKind.BroadcastAmplification).Disposition == NetworkDisposition.Allow;
             if (!ping) args.Handled = true;
+            TraceM18Handshake(args, binding, "maintenance");
             return;
         }
         if (binding is not null && !_engine!.CanWrite(binding.Key))
@@ -721,6 +885,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             }
             // Packet callbacks are main-update callbacks in the locked baseline. Never enqueue an unbounded disconnect.
             binding.DisconnectOnce("AntiCheat session revoked.");
+            TraceM18Handshake(args, binding, "revoked");
             return;
         }
         if (binding is not null) _engine!.Touch(binding.Key);
@@ -748,12 +913,14 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                 if (resource.SourceEvent is not null)
                     ServerApi.LogWriter.PluginWriteLine(this, "ANTICHEAT_NETWORK_DRYRUN " + System.Text.Json.JsonSerializer.Serialize(resource.SourceEvent), TraceLevel.Warning);
                 if (resource.Disposition == NetworkDisposition.Disconnect) binding.DisconnectOnce("AntiCheat connection resource budget exceeded.");
+                TraceM18Handshake(args, binding, "resource");
                 return;
             }
             if (work.RejectMalformed)
             {
                 args.Handled = true;
                 if (craftingWork is not null) Interlocked.Increment(ref _blockedMalformed);
+                TraceM18Handshake(args, binding, "resource-malformed");
                 return;
             }
         }
@@ -761,21 +928,50 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         {
             args.Handled = true;
             Interlocked.Increment(ref _blockedMalformed);
+            TraceM18Handshake(args, binding, "malformed");
             return;
         }
         if (binding is not null && _bytes.TryConsume(binding.RateKey, Math.Max(1, args.Length)).Behavior == ControlAction.Block)
         {
             args.Handled = true;
             binding.DisconnectOnce("AntiCheat connection resource budget exceeded.");
+            TraceM18Handshake(args, binding, "rate");
             return;
+        }
+        var particleRead = M18ParticlePacketReader.Read(args, _targetRuntime.Verified);
+        if (_m18CandidateActive && (byte)args.MsgID == M18ParticlePacketReader.MessageId &&
+            Interlocked.Exchange(ref _particleRuntimeDiagnosticWritten, 1) == 0)
+        {
+            try
+            {
+                ServerApi.LogWriter.PluginWriteLine(this, $"ANTICHEAT_M18_PARTICLE_RUNTIME packet=82 " +
+                    $"readKind={particleRead.Kind} {M18ParticlePacketReader.DescribeRuntime(_targetRuntime.Verified)}", TraceLevel.Info);
+            }
+            catch { /* A bounded diagnostic must not affect packet handling. */ }
+        }
+        if (particleRead.Kind == PacketReadKind.Malformed)
+        {
+            args.Handled = true;
+            Interlocked.Increment(ref _blockedMalformed);
+            TraceM18Handshake(args, binding, "malformed");
+            return;
+        }
+        if (particleRead.Packet is { } particle && binding is not null && _business is not null)
+        {
+            var particleResult = _business.EvaluateParticle(particle, binding.Key, binding.Player, args.Handled);
+            if (particleResult is not null) ApplyBusiness(args, binding, particleResult);
+            if (args.Handled || !_engine!.CanWrite(binding.Key)) { TraceM18Handshake(args, binding, "particle-result"); return; }
         }
         if (_targetRuntime.Verified)
         {
             if (binding is not null)
             {
                 RunInventory(context => context.ObserveLoadout(binding.Key, binding.Player, args));
+                RecordM18PacketStage(args, binding, "before-process-m2");
                 ProcessM2(args, binding);
+                RecordM18PacketStage(args, binding, "after-process-m2");
             }
+            TraceM18Handshake(args, binding, "verified-return");
             return;
         }
         var parsed = PlayerSlotPacketReader.Read(args.MsgID, args.Msg.readBuffer, args.Index, args.Length,
@@ -795,6 +991,20 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         if (decision.Verdict == Verdict.Unknown) Interlocked.Increment(ref _unknownCandidates);
         PlayerSlotPacketReader.PreserveOrBlock(args, decision.Behavior == ControlAction.Block);
         if (decision.Incident is not null) binding.DisconnectOnce("AntiCheat proven violation.");
+    }
+
+    private void TraceM18Handshake(GetDataEventArgs args, Binding? binding, string stage)
+    {
+        if (!_m18CandidateActive || (byte)args.MsgID != 1) return;
+        try
+        {
+            string writable = binding is null ? "none" : _engine?.CanWrite(binding.Key).ToString() ?? "null";
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_HANDSHAKE stage={stage} slot={args.Msg.whoAmI} handled={args.Handled} " +
+                $"binding={(binding is null ? "none" : "present")} networkRegistered={binding?.NetworkRegistered} " +
+                $"timeoutTermination={binding?.TimeoutTerminationRequested} canWrite={writable}", TraceLevel.Info);
+        }
+        catch { }
     }
 
     private void ProcessM2(GetDataEventArgs args, Binding binding)
@@ -993,6 +1203,15 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             BusinessRuleResult? result = null;
             RunVitals(context => result = context.Evaluate(vital, binding.Key, binding.Player));
             if (result is not null) ApplyBusiness(args, binding, result);
+            var lockDecision = vital.Kind == M4VitalKind.Life
+                ? _lockHealth?.ObserveLifeSync(vital, binding.Key, binding.Player, args.Handled)
+                : null;
+            if (lockDecision?.RuleResult is { } lockResult)
+            {
+                ApplyBusiness(args, binding, lockResult);
+                if (lockDecision.Kick && args.Handled && _engine!.CanWrite(binding.Key))
+                    binding.DisconnectOnce("AntiCheat service rule: sustained one-point full-life sync.");
+            }
             return;
         }
         var buffListRead = M3BuffListReader.Read(args, true);
@@ -1062,6 +1281,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         BusinessRuleResult? summonResult = null;
         RunSummonBudget(context => summonResult = context.Evaluate(packet, binding.Key, binding.Player, args.Handled));
         if (summonResult is not null) ApplyBusiness(args, binding, summonResult);
+        RunNpcStrikeCauses(context => context.ObservePlayerControls(packet, binding.Key, binding.Player, args.Handled));
         _movementObservations?.Observe(packet, binding.Key, binding.Player, args.Handled);
         ArrowCandidateEnvelope? arrowEnvelope = null;
         RunArrowCandidates(context => arrowEnvelope = context.Observe(packet, binding.Key, binding.Player));
@@ -1151,12 +1371,41 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                 var target = GetBinding(slot);
                 return (target is null ? null : _engine.GetSession(target.Key), target?.Player);
             }, args.Handled);
+            if (packet.Kind is M2PacketKind.WorldItemDrop or M2PacketKind.WorldItemDespawn)
+                TraceM18P0DWorldRule(args, binding, results);
             foreach (var result in results)
             {
                 ApplyBusiness(args, binding, result);
                 if (!_engine.CanWrite(binding.Key)) break;
             }
         }
+    }
+
+    private void TraceM18P0DWorldRule(GetDataEventArgs args, Binding binding,
+        IReadOnlyList<BusinessRuleResult> results)
+    {
+        if (!_m18CandidateActive || (byte)args.MsgID is not (21 or 90 or 151)) return;
+        int bit = (byte)args.MsgID switch
+        {
+            21 => 1,
+            90 => 2,
+            151 => 4,
+            _ => 0,
+        };
+        if ((Interlocked.Or(ref _m18P0DWorldRuleDiagnosticMask, bit) & bit) != 0) return;
+        try
+        {
+            var itemRule = results.FirstOrDefault(x => x.RuleId == InventoryRules.RuleId);
+            var clearRule = results.FirstOrDefault(x => x.RuleId == M18GroundItemClearQueueRules.RuleId);
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_P0D_ITEM_RULE packet={(byte)args.MsgID} slot={binding.Key.Slot} " +
+                $"rule={itemRule?.RuleId ?? "none"} verdict={itemRule?.Verdict.ToString() ?? "none"} " +
+                $"resultAction={itemRule?.Action.ToString() ?? "none"} reason={itemRule?.Reason ?? "none"} " +
+                $"clearRule={clearRule?.RuleId ?? "none"} clearVerdict={clearRule?.Verdict.ToString() ?? "none"} " +
+                $"clearAction={clearRule?.Action.ToString() ?? "none"} clearReason={clearRule?.Reason ?? "none"} " +
+                $"resultCount={results.Count}", TraceLevel.Info);
+        }
+        catch { /* Bounded diagnostic cannot affect packet handling. */ }
     }
 
     private void ApplyBusiness(GetDataEventArgs args, Binding binding, BusinessRuleResult result)
@@ -1187,9 +1436,17 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         }
         try
         {
-            if ((_scope == ExecutionScope.TestLab || _scope == ExecutionScope.Production &&
+            bool m18CandidateRule = _m18CandidateActive && result.RuleId is
+                M18NpcStrikeQueueRules.RuleId or M18WorldEditQueueRules.RuleId or
+                M18ParticleQueueRules.RuleId or M18LockHealthRules.RuleId or
+                M18ImportantItemQueueRules.RuleId or M18GroundItemClearQueueRules.RuleId or
+                InventoryRules.RuleId;
+            if ((_scope == ExecutionScope.TestLab || m18CandidateRule || _scope == ExecutionScope.Production &&
                 M2RuleRegistry.ProductionRules.TryGetValue(result.RuleId, out var admittedVersion) && admittedVersion == result.Version)
-                && binding.TryReportBusiness(result))
+                && binding.TryReportBusiness(result, result.RuleId == M18GroundItemClearQueueRules.RuleId &&
+                    result.Facts.TryGetValue("targetSlot", out var targetSlot) &&
+                    result.Facts.TryGetValue("targetGeneration", out var targetGeneration)
+                    ? targetSlot + "/" + targetGeneration : null))
             {
                 // Reuse the existing bounded per-session diagnostic gate. This component union
                 // is observable research context, never a complete legal projectile damage limit.
@@ -1222,9 +1479,20 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
                         "nativeHostContractComplete", "currentAccountAndActorBound", "contextComplete",
                         "leaseConfirmed", "serverChestAligned", "nativeContainerProtocol" }
                         .Where(result.Facts.ContainsKey).Select(key => $" {key}={result.Facts[key]}"));
+                if (result.RuleId == M18NpcStrikeQueueRules.RuleId)
+                    candidateSummary = string.Concat(new[] { "strikeQueue", "strikeQueueSamples", "strikeQueueClassification",
+                        "strikeQueueActionContract" }
+                        .Where(result.Facts.ContainsKey).Select(key => $" {key}={result.Facts[key]}"));
+                if (result.RuleId == M18GroundItemClearQueueRules.RuleId)
+                    candidateSummary = string.Concat(new[] { "contractVersion", "targetSlot", "targetGeneration",
+                        "targetType", "targetStack", "targetCoordinates", "requestCoordinates",
+                        "remoteOrMismatched", "capacityExhausted", "sessionClearCount", "eventsRetained",
+                        "positionSequence", "identityComplete", "actionContract", "sanctionContract" }
+                        .Where(result.Facts.ContainsKey).Select(key => $" {key}={result.Facts[key]}"));
                 ServerApi.LogWriter.PluginWriteLine(this, $"ANTICHEAT_RULE_INPUT rule={result.RuleId} verdict={result.Verdict} " +
                     $"reason={result.Reason} prerequisites={result.PrerequisitesComplete} accountId={_engine.GetSession(binding.Key)?.AccountId} " +
-                    $"slot={binding.Key.Slot} packet={packetId} action={decision.Behavior} canceled={cancelled} alreadyCanceled={alreadyCancelled}{candidateSummary}", TraceLevel.Info);
+                    $"slot={binding.Key.Slot} packet={packetId} action={decision.Behavior} decisionReason={decision.Reason} " +
+                    $"facts={result.Facts.Count} canceled={cancelled} alreadyCanceled={alreadyCancelled}{candidateSummary}", TraceLevel.Info);
             }
             if (_scope == ExecutionScope.TestLab && result.RuleId == "C5.BuffProtocol" && result.Verdict == Verdict.Pass
                 && !cancelled && binding.TryReportBuffPass())
@@ -1245,13 +1513,16 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
 
     private void OnUpdate(EventArgs args)
     {
+        RecordM18GameUpdate();
         RunSummonBudget(context => context.Tick(_engine?.CurrentWorldEpoch ?? 0));
         _liquidExecution?.BindExecutionThread();
         try { _paintRecovery?.Tick(_engine?.CurrentWorldEpoch ?? 0); }
         catch (Exception error) { _paintRecovery?.InvalidateObservation(); ReportContextFault("PaintRecovery", error); }
         _shimmerItems?.Tick(_engine?.CurrentWorldEpoch ?? 0);
         _movementObservations?.Tick(_engine?.CurrentWorldEpoch ?? 0);
+        _lockHealth?.Tick(_engine?.CurrentWorldEpoch ?? 0);
         RunVitals(context => context.Tick());
+        RecordM4VitalsHealth("GameUpdate");
         RunProgression(context => context.Update(_engine?.CurrentWorldEpoch ?? 0));
         if (_targetRuntime.Verified && _business is not null)
         {
@@ -1279,6 +1550,8 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             return (binding is null ? null : _engine?.GetSession(binding.Key), binding?.Player);
         }, ServerApi.Plugins.All(x => x.Plugin.GetType() == typeof(ServerTShock) || x.Plugin.GetType() == typeof(AntiCheatPlugin))));
         RunNpcStrikeCauses(context => context.Tick(_engine?.CurrentWorldEpoch ?? 0));
+        try { _m18ObservationJournal?.FlushIfDue(); }
+        catch (Exception error) { ReportContextFault("M18ObservationJournalFlush", error); }
         if (_arrowResetDiagnostics is { Healthy: true } resetDiagnostics)
         {
             bool nativeHost = ServerApi.Plugins.All(x => x.Plugin.GetType() == typeof(ServerTShock) || x.Plugin.GetType() == typeof(AntiCheatPlugin));
@@ -1301,6 +1574,128 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             ServerApi.LogWriter.PluginWriteLine(this, "ANTICHEAT_TABLES_READY items=True buffs=True projectiles=True", TraceLevel.Info);
         }
         RunInfrastructureMaintenance("GameUpdate");
+    }
+
+    private void RecordM4VitalsHealth(string source)
+    {
+        if (!_m18CandidateActive || _vitals is not { } vitals) return;
+        long count = Interlocked.Increment(ref _m4VitalsUpdateCount);
+        if (count != 1 && count % 600 != 0) return;
+        try
+        {
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M4_VITALS_HEALTH source={source} updateCount={count} " +
+                $"installed={vitals.Installed} failed={vitals.Failed} " +
+                $"installThread={vitals.InstallThreadId} lastTickThread={vitals.LastTickThreadId} " +
+                $"currentThread={Environment.CurrentManagedThreadId} " +
+                $"threadMatch={vitals.CurrentThreadMatchesUpdateThread} " +
+                $"vitalsTickCount={vitals.TickCount} " +
+                $"hurtPluginObservationHealthy={vitals.HurtPluginObservationHealthy}", TraceLevel.Info);
+        }
+        catch (Exception error) { ReportContextFault("M4VitalsHealthDiagnostic", error); }
+    }
+
+    private void RecordM18PacketStage(GetDataEventArgs args, Binding? binding, string stage)
+    {
+        if (!_m18CandidateActive) return;
+        int ordinal = Interlocked.Increment(ref _m18PacketStageDiagnosticCount);
+        if (ordinal > 256) return;
+        try
+        {
+            var session = binding is null ? null : _engine?.GetSession(binding.Key);
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_PACKET_STAGE stage={stage} packet={(byte)args.MsgID} " +
+                $"slot={args.Msg.whoAmI} index={args.Index} length={args.Length} handled={args.Handled} " +
+                $"accountId={session?.AccountId} playerActive={Main.player[args.Msg.whoAmI]?.active} " +
+                $"thread={Environment.CurrentManagedThreadId} ordinal={ordinal}", TraceLevel.Info);
+        }
+        catch { }
+    }
+
+    private void RecordM18GameUpdate()
+    {
+        if (!_m18CandidateActive) return;
+        long ordinal = Interlocked.Increment(ref _m18GameUpdateDiagnosticCount);
+        if (ordinal != 1 && ordinal % 600 != 0) return;
+        try
+        {
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_GAME_UPDATE ordinal={ordinal} thread={Environment.CurrentManagedThreadId} " +
+                $"netMode={Main.netMode} fullyConnected={Netplay.HasFullyConnectedClients} " +
+                $"playerCount={Main.player.Count(player => player is not null && player.active)} " +
+                $"candidate={_m18CandidateActive}", TraceLevel.Info);
+        }
+        catch { }
+    }
+
+    private void RecordM18ServerSend(HookEvents.Terraria.NetMessage.SendDataEventArgs args)
+    {
+        if (!_m18CandidateActive || args.msgType is not (3 or 7 or 8 or 9 or 10 or 11 or 12 or 13 or 16 or 42 or 49))
+            return;
+        int ordinal = Interlocked.Increment(ref _m18ServerSendDiagnosticCount);
+        if (ordinal > 128) return;
+        try
+        {
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_SERVER_SEND packet={args.msgType} remote={args.remoteClient} " +
+                $"ignore={args.ignoreClient} number={args.number} number2={args.number2} " +
+                $"number3={args.number3} number4={args.number4} continue={args.ContinueExecution} " +
+                $"thread={Environment.CurrentManagedThreadId} ordinal={ordinal}", TraceLevel.Info);
+        }
+        catch { }
+    }
+
+    private void QueueM18GroundItemPostState(M18GroundItemPacketTrace trace, BusinessRuleResult result)
+    {
+        if (!_m18CandidateActive || result.RuleId != M18GroundItemClearQueueRules.RuleId) return;
+        lock (_m18GroundItemPostStateLock)
+        {
+            if (_m18GroundItemPostStates.Count >= 64)
+            {
+                _m18GroundItemPostStates.Dequeue();
+                if (_m18GroundItemPostStateDropped < int.MaxValue) _m18GroundItemPostStateDropped++;
+            }
+            _m18GroundItemPostStates.Enqueue((trace, result));
+        }
+    }
+
+    private void OnPostUpdate(EventArgs args)
+    {
+        if (!_m18CandidateActive) return;
+        int remaining = 64;
+        while (remaining-- > 0)
+        {
+            (M18GroundItemPacketTrace Trace, BusinessRuleResult Result) pending;
+            lock (_m18GroundItemPostStateLock)
+            {
+                if (_m18GroundItemPostStates.Count == 0) break;
+                pending = _m18GroundItemPostStates.Dequeue();
+            }
+
+            try
+            {
+                Interlocked.Increment(ref _m18GroundItemPostUpdateCount);
+                var trace = pending.Trace;
+                var result = pending.Result;
+                int id = trace.TargetSlot;
+                var item = id >= 0 && id < Main.maxItems && id < Main.item.Length ? Main.item[id] : null;
+                string post = item is null ? "missing" :
+                    $"exists=True/active={item.active}/type={item.type}/stack={item.stack}/" +
+                    $"grabbed={item.beingGrabbed}/pos={item.position.X},{item.position.Y}";
+                string targetGeneration = result.Facts.TryGetValue("targetGeneration", out var generation) ? generation : "unknown";
+                bool nativeEligible = !trace.AlreadyCancelled && result.Action != ControlAction.Block;
+                ServerApi.LogWriter.PluginWriteLine(this,
+                    $"ANTICHEAT_M18_F08_POST packet={trace.PacketId} accountId={trace.AccountId} " +
+                    $"slot={trace.Session.Slot} id={id} targetGeneration={targetGeneration} " +
+                    $"ruleAction={result.Action} verdict={result.Verdict} reason={result.Reason} " +
+                    $"decisionCancelled={trace.AlreadyCancelled || result.Action == ControlAction.Block} " +
+                    $"nativeBoundary={(nativeEligible ? "eligible-after-guard" : "blocked-before-native")} " +
+                    $"preServerItem={trace.TargetExists}/{trace.TargetActive}/{trace.ServerTargetType}/{trace.ServerTargetStack}/grabbed={trace.TargetBeingGrabbed} " +
+                    $"postServerItem={post} postHook=GamePostUpdate dropped={Volatile.Read(ref _m18GroundItemPostStateDropped)}",
+                    TraceLevel.Info);
+            }
+            catch (Exception error) { ReportContextFault("M18GroundItemPostStateDiagnostic", error); }
+        }
     }
 
     private void OnIdleMaintenance()
@@ -1599,14 +1994,290 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
         ReportContextFault("Combat", exception);
     }
 
+    private void RecordM18GroundItemPacket(M18GroundItemPacketTrace trace)
+    {
+        if (!_m18CandidateActive || trace.PacketId is not ((byte)PacketTypes.ItemDrop or
+            (byte)PacketTypes.UpdateItemDrop or (byte)PacketTypes.SyncItemDespawn))
+            return;
+        int ordinal = Interlocked.Increment(ref _m18GroundItemPacketDiagnosticCount);
+        if (ordinal > 256) return;
+        try
+        {
+            string shape = trace.PacketId == (byte)PacketTypes.SyncItemDespawn ?
+                "sync-item-despawn" : "world-item-frame";
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_F08_RAW packet={trace.PacketId} shape={shape} bytes={trace.PayloadLength} " +
+                $"accountId={trace.AccountId} slot={trace.Session.Slot} id={trace.TargetSlot} " +
+                $"requestPos={(trace.RequestCoordinatesComplete ? $"{trace.RequestX},{trace.RequestY}" : "unavailable(packet151-id-only)")} " +
+                $"actorPos={(trace.ActorPositionSnapshotComplete ? $"{trace.ActorX},{trace.ActorY}" : "unavailable")} " +
+                $"vel={trace.VelocityX},{trace.VelocityY} " +
+                $"stack={trace.Stack} prefix={trace.Prefix} flags={trace.Flags} type={trace.Type} " +
+                $"serverItem={trace.TargetExists}/{trace.TargetActive}/{trace.ServerTargetType}/" +
+                $"{trace.ServerTargetStack}/grabbed={trace.TargetBeingGrabbed} " +
+                $"attributed={trace.AttributionComplete} alreadyCanceled={trace.AlreadyCancelled} ordinal={ordinal}",
+                TraceLevel.Info);
+        }
+        catch (Exception error)
+        {
+            ReportContextFault("M18GroundItemPacketDiagnostic", error);
+        }
+    }
+
+    private void RecordM18StrikeObservation(M18NpcStrikeObservation observation,
+        M18NpcStrikeQueueDecision decision)
+    {
+        var journal = _m18ObservationJournal;
+        if (journal is null) return;
+        journal.RecordStrike(new M18StrikeObservationRecord(
+            SessionId(observation.Session),
+            observation.AccountId,
+            observation.Session.WorldEpoch,
+            observation.WorldId,
+            observation.Stage.ToString(),
+            observation.TargetSlot,
+            observation.TargetGeneration,
+            observation.TargetType,
+            observation.WireDamage,
+            observation.ReceiverDamage,
+            observation.TargetLife,
+            observation.TargetLifeMax,
+            observation.StageSnapshotComplete,
+            observation.TargetActive,
+            observation.TargetGenerationMatchesCurrent,
+            observation.AttributionComplete,
+            observation.LegalExceptionsExcluded,
+            decision.Counted,
+            decision.LowDamage,
+            decision.ExtremeDamage,
+            observation.ClientOrigin ? "client-packet28" : "unknown",
+            decision.Action.ToString(),
+            decision.Verdict.ToString(),
+            decision.Reason,
+            DateTimeOffset.UtcNow)
+        {
+            ButcherPatternDetected = decision.ButcherPatternDetected,
+            ButcherPositionContextComplete = decision.ButcherPositionContextComplete,
+            ButcherPreControlAtTarget = decision.ButcherPreControlAtTarget,
+            ButcherControlJumpDetected = decision.ButcherControlJumpDetected,
+            ButcherReturnPositionStable = decision.ButcherReturnPositionStable,
+            ButcherRepeatedAttackSignature = decision.ButcherRepeatedAttackSignature,
+            ButcherCrossTargetContinuation = decision.ButcherCrossTargetContinuation,
+            ButcherCompletedTargetSequences = decision.ButcherCompletedTargetSequences,
+            ButcherCurrentTargetStrikes = decision.ButcherCurrentTargetStrikes,
+            SummonContextComplete = decision.SummonContextComplete,
+            SummonMaintenanceBuffObserved = decision.SummonMaintenanceBuffObserved,
+            MatchingSummonEntityObserved = decision.MatchingSummonEntityObserved,
+            MatchingSummonEntityCount = decision.MatchingSummonEntityCount,
+            InterceptionBoundary = decision.IsButcherPatternBlock || decision.IsExtremeDamageBlock
+                ? "packet28-before-native-receiver"
+                : "packet28-observation-before-native-receiver",
+        });
+    }
+
+    private void RecordM18StrikeCompletion(M8NpcStrikeCompletion completion,
+        M18NpcStrikeQueueDecision decision)
+    {
+        var postNative = new M18NpcStrikePostNativeObservation(
+            completion.Session,
+            completion.AccountId,
+            completion.TargetSlot,
+            completion.TargetGeneration,
+            completion.TargetType,
+            completion.WireDamage,
+            completion.ReceiverDamage,
+            completion.TargetLifeMax,
+            completion.LifeBefore,
+            completion.LifeAfter,
+            completion.TargetFriendly,
+            completion.TargetDummy,
+            completion.InitialQueueDecision.Stage,
+            completion.InitialQueueDecision.StageSnapshotComplete,
+            completion.InitialQueueDecision.ButcherPositionContextComplete,
+            completion.InitialQueueDecision.ButcherPreControlAtTarget,
+            completion.InitialQueueDecision.ButcherControlJumpDetected,
+            ClientOrigin: true,
+            completion.AttributionComplete,
+            completion.LegalExceptionsExcluded,
+            completion.NativeStrikeEntryObserved,
+            completion.LootMethodEntryObserved,
+            completion.RelayAttemptObserved);
+        try
+        {
+            _m18ObservationJournal?.RecordStrike(new M18StrikeObservationRecord(
+                SessionId(completion.Session),
+                completion.AccountId,
+                completion.Session.WorldEpoch,
+                completion.InitialQueueDecision.WorldId,
+                postNative.Stage.ToString(),
+                completion.TargetSlot,
+                completion.TargetGeneration,
+                completion.TargetType,
+                completion.WireDamage,
+                completion.ReceiverDamage,
+                completion.LifeBefore,
+                completion.TargetLifeMax,
+                postNative.StageSnapshotComplete,
+                completion.ActiveAfter,
+                true,
+                completion.AttributionComplete,
+                completion.LegalExceptionsExcluded,
+                decision.Counted,
+                decision.LowDamage,
+                decision.ExtremeDamage,
+                "client-packet28-post-native-relay",
+                decision.Action.ToString(),
+                decision.Verdict.ToString(),
+                decision.Reason,
+                DateTimeOffset.UtcNow)
+            {
+                ButcherPatternDetected = decision.ButcherPatternDetected,
+                ButcherPositionContextComplete = decision.ButcherPositionContextComplete,
+                ButcherPreControlAtTarget = decision.ButcherPreControlAtTarget,
+                ButcherControlJumpDetected = decision.ButcherControlJumpDetected,
+                ButcherReturnPositionStable = decision.ButcherReturnPositionStable,
+                ButcherRepeatedAttackSignature = decision.ButcherRepeatedAttackSignature,
+                ButcherCrossTargetContinuation = decision.ButcherCrossTargetContinuation,
+                ButcherCompletedTargetSequences = decision.ButcherCompletedTargetSequences,
+                ButcherCurrentTargetStrikes = decision.ButcherCurrentTargetStrikes,
+                PostNativeOneShotDeathEvidence = decision.PostNativeOneShotDeathEvidence,
+                PostNativeSanctionCandidate = decision.PostNativeSanctionCandidate,
+                SummonContextComplete = decision.SummonContextComplete,
+                SummonMaintenanceBuffObserved = decision.SummonMaintenanceBuffObserved,
+                MatchingSummonEntityObserved = decision.MatchingSummonEntityObserved,
+                MatchingSummonEntityCount = decision.MatchingSummonEntityCount,
+                InterceptionBoundary = "packet28-after-native-relay-post-death-evidence",
+            });
+        }
+        catch (Exception error)
+        {
+            ReportContextFault("M18StrikeCompletionJournal", error);
+        }
+
+        try
+        {
+            ServerApi.LogWriter.PluginWriteLine(this,
+                $"ANTICHEAT_M18_F06_POST_NATIVE accountId={completion.AccountId} slot={completion.Session.Slot} " +
+                $"npc={completion.TargetSlot}/{completion.TargetGeneration}/{completion.TargetType} " +
+                $"damage={completion.WireDamage}/{completion.ReceiverDamage} life={completion.LifeBefore}->{completion.LifeAfter}/{completion.TargetLifeMax} " +
+                $"death={postNative.ObservedDeath} overkill={postNative.OverkillBeyondTargetMaximum} " +
+                $"native={completion.NativeStrikeEntryObserved} loot={completion.LootMethodEntryObserved} relay={completion.RelayAttemptObserved} " +
+                $"position={completion.InitialQueueDecision.ButcherPositionContextComplete}/" +
+                $"{completion.InitialQueueDecision.ButcherPreControlAtTarget}/" +
+                $"{completion.InitialQueueDecision.ButcherControlJumpDetected} " +
+                $"postNativeEvidence={decision.PostNativeOneShotDeathEvidence} sanctionCandidate={decision.PostNativeSanctionCandidate}",
+                TraceLevel.Info);
+        }
+        catch (Exception error)
+        {
+            ReportContextFault("M18StrikeCompletionDiagnostic", error);
+        }
+
+        if (!decision.IsPostNativeSanctionCandidate || _engine is null)
+            return;
+        var binding = GetBinding(completion.Session.Slot);
+        if (binding is null || binding.Key != completion.Session)
+            return;
+        var input = new RuleInputContext(completion.Session, _targetRuntime.Fingerprint,
+            TargetRuntime.Fingerprint, ParserComplete: true, SnapshotComplete: true,
+            AttributionComplete: completion.AttributionComplete,
+            ExceptionsExcluded: completion.LegalExceptionsExcluded, ClientOrigin: true);
+        var result = M18NpcStrikeQueueRules.PostNativeObserve(input, postNative, decision);
+        ApplyBusinessResult(28, false, binding, result);
+    }
+
+    private void RecordM18RewardObservation(M18ImportantItemRewardObservation observation)
+    {
+        var journal = _m18ObservationJournal;
+        if (journal is null) return;
+        foreach (var item in observation.Items)
+            journal.RecordImportantItem(new M18ImportantItemObservationRecord(
+                SessionId(observation.Session),
+                observation.AccountId,
+                observation.Session.WorldEpoch,
+                observation.NpcSlot,
+                observation.NpcGeneration,
+                observation.NpcType,
+                item.ItemIndex,
+                item.ItemId,
+                item.ItemName,
+                item.Stack,
+                item.PreviousStack,
+                item.Delta,
+                item.MaxStack,
+                "NativeReward",
+                observation.SourceContextKnown,
+                observation.SourceAttributionComplete,
+                true,
+                true,
+                false,
+                "Observe",
+                "Unknown",
+                "native-reward-observation",
+                observation.Boundary,
+                DateTimeOffset.UtcNow));
+    }
+
+    private void RecordM18ImportantItemObservation(M18ImportantItemObservation observation,
+        M18ImportantItemQueueDecision decision)
+    {
+        var journal = _m18ObservationJournal;
+        if (journal is null || !decision.Important) return;
+        string itemName = M18ImportantItemCatalog.Items.TryGetValue(decision.ItemId, out var name)
+            ? name : "unknown";
+        var record = new M18ImportantItemObservationRecord(
+            SessionId(observation.Session),
+            observation.AccountId,
+            observation.Session.WorldEpoch,
+            -1,
+            0,
+            0,
+            observation.Slot,
+            decision.ItemId,
+            itemName,
+            decision.Stack,
+            decision.PreviousSlotStack,
+            decision.Delta,
+            0,
+            observation.Source.ToString(),
+            observation.SourceContextKnown,
+            observation.SourceAttributionComplete,
+            decision.Recorded,
+            decision.GrowthObserved,
+            decision.PossibleSorting,
+            decision.Action.ToString(),
+            decision.Verdict.ToString(),
+            decision.Reason,
+            "packet-time important-item observation; creator and ownership proof unavailable",
+            DateTimeOffset.UtcNow)
+        {
+            PreviousTotal = decision.PreviousTotal,
+            CurrentTotal = decision.CurrentTotal,
+            PreviousSlotStack = decision.PreviousSlotStack,
+            CurrentSlotStack = decision.Stack,
+        };
+        journal.RecordImportantItem(record);
+    }
+
+    private static string SessionId(SessionKey session)
+        => $"{session.ServerRunId:N}/{session.WorldEpoch}/{session.Slot}/{session.Generation}";
+
     private void ReportContextFault(string producer, Exception exception)
     {
         try
         {
+            bool first;
             lock (_reportedContextFaults)
-                if (_reportedContextFaults.Count < 16 && _reportedContextFaults.Add(producer))
-                    ServerApi.LogWriter.PluginWriteLine(this, "AntiCheat context disabled after integrity fault: "
-                        + producer + " " + exception.GetType().Name, TraceLevel.Error);
+                first = _reportedContextFaults.Count < 16 && _reportedContextFaults.Add(producer);
+            if (!first) return;
+            ServerApi.LogWriter.PluginWriteLine(this, "AntiCheat context disabled after integrity fault: "
+                + producer + " " + exception.GetType().Name, TraceLevel.Error);
+            if (producer == "Vitals")
+            {
+                string detail = exception.ToString();
+                if (detail.Length > 8192) detail = detail[..8192] + " [truncated]";
+                ServerApi.LogWriter.PluginWriteLine(this,
+                    "AntiCheat Vitals fault detail: " + detail, TraceLevel.Error);
+            }
         }
         catch { /* Notification failure must not interrupt independent producers or infrastructure maintenance. */ }
     }
@@ -1620,6 +2291,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
             ServerApi.Hooks.ServerChat.Deregister(this, OnChat);
             ServerApi.Hooks.GameUpdate.Deregister(this, OnUpdate);
+            ServerApi.Hooks.GamePostUpdate.Deregister(this, OnPostUpdate);
             Main.OnTickForThirdPartySoftwareOnly -= OnIdleMaintenance;
             ServerApi.Hooks.GameWorldConnect.Deregister(this, OnWorldChanged);
             ServerApi.Hooks.GameWorldDisconnect.Deregister(this, OnWorldChanged);
@@ -1635,6 +2307,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             Cleanup("ArrowResetDiagnostics", () => _arrowResetDiagnostics?.Dispose());
             _arrowResetInputs = null;
             Cleanup("NpcStrikeCauses", () => _npcStrikeCauses?.Dispose());
+            Cleanup("M18ObservationJournal", () => _m18ObservationJournal?.Dispose());
             Cleanup("NaturalProgression", () => _naturalProgression?.Dispose());
             Cleanup("WiringExecution", () => _wiringExecution?.Dispose());
             Cleanup("ShimmerItems", () => _shimmerItems?.Dispose());
@@ -1647,6 +2320,7 @@ public sealed class AntiCheatPlugin : TerrariaPlugin
             Cleanup("PreHelloDeadline", () => _preHelloDeadlines.Dispose());
             Cleanup("TimeoutRetirements", () => _timeoutRetirements.Dispose());
             Cleanup("Vitals", () => _vitals?.Dispose());
+            Cleanup("LockHealthCandidate", () => _lockHealth?.Dispose());
             Cleanup("CombatLabDiagnostics", () => _combatLabDiagnostics?.Dispose());
             var labConnections = _labConnections; _labConnections = null;
             try { labConnections?.Dispose(); }

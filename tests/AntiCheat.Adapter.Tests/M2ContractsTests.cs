@@ -1,8 +1,10 @@
 using System.Reflection;
+using System.Buffers.Binary;
 using System.Net;
 using System.Runtime.InteropServices;
 using AntiCheat.Core;
 using AntiCheat.Plugin.TShock;
+using AntiCheat.Rules;
 using NUnit.Framework;
 using TerrariaApi.Server;
 
@@ -29,6 +31,39 @@ public sealed class M2ContractsTests
         packet = Packet(type, new byte[size + 1]);
         Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed));
         Assert.That(M2PacketReader.Read(packet, false).Kind, Is.EqualTo(PacketReadKind.UnknownRuntime));
+    }
+
+    [TestCase(PacketTypes.ItemDrop)]
+    [TestCase(PacketTypes.UpdateItemDrop)]
+    public void WorldItemDropFramesFollowTargetConditionalFlags(PacketTypes type)
+    {
+        foreach (byte flags in new byte[] { 0, 4, 8, 12, 0xF0 })
+        {
+            int size = 24 + ((flags & 4) != 0 ? 5 : 0) + ((flags & 8) != 0 ? 1 : 0);
+            var body = new byte[size]; body[21] = flags;
+            var packet = Packet(type, body);
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Parsed), $"flags={flags}");
+            packet.Length--;
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed), $"truncated flags={flags}");
+            packet = Packet(type, [.. body, 0]);
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed), $"trailing flags={flags}");
+        }
+    }
+
+    [Test]
+    public void SyncItemDespawnFrameIsExactlyTheTwoByteItemIndex()
+    {
+        var packet = Packet(PacketTypes.SyncItemDespawn, new byte[2]);
+        Assert.Multiple(() =>
+        {
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Parsed));
+            Assert.That(M2PacketReader.Read(packet, false).Kind, Is.EqualTo(PacketReadKind.UnknownRuntime));
+        });
+
+        packet.Length--;
+        Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed));
+        Assert.That(M2PacketReader.Read(Packet(PacketTypes.SyncItemDespawn, new byte[3]), true).Kind,
+            Is.EqualTo(PacketReadKind.Malformed));
     }
 
     [Test]
@@ -59,6 +94,25 @@ public sealed class M2ContractsTests
         Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed));
     }
 
+    [Test]
+    public void SentryNativeFrameReaderUsesTheSelectedOffsetAndRejectsShortOrTrailingBodies()
+    {
+        var body = new byte[23];
+        BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(20), 308);
+        byte[] backing = new byte[64];
+        body.CopyTo(backing, 7);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(M2PacketReader.TryReadProjectilePayload(backing.AsSpan(7, body.Length), out var selected), Is.True);
+            Assert.That(selected, Is.EqualTo(body));
+            Assert.That(M2PacketReader.TryReadProjectilePayload(backing.AsSpan(7, body.Length - 1), out _), Is.False,
+                "A short frame must not borrow a byte from the backing buffer.");
+            Assert.That(M2PacketReader.TryReadProjectilePayload(backing.AsSpan(7, body.Length + 1), out _), Is.False,
+                "A trailing byte must not be interpreted as part of the native frame.");
+        });
+    }
+
     [TestCase("9.0.7", true, Architecture.X64, true)]
     [TestCase("9.0.8", true, Architecture.X64, false)]
     [TestCase("9.0.7", false, Architecture.X64, false)]
@@ -79,12 +133,43 @@ public sealed class M2ContractsTests
         {
             Assert.That(new M2Configuration().ExperimentalLiquidScheduler, Is.False);
             Environment.SetEnvironmentVariable("ANTICHEAT_LAB_ROOT", root);
-            Assert.That(M2Configuration.Load(save, IPAddress.Loopback).Configuration.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            var missingMarker = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            Assert.That(missingMarker.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            Assert.That(missingMarker.M18CandidateMode, Is.EqualTo(M18CandidateMode.Disabled));
+            Assert.That(missingMarker.M18EnableBlocks, Is.False);
+            AssertNoTestLabAdmission(missingMarker);
             File.WriteAllText(Path.Combine(root, ".anticheat-lab"), "test");
-            Assert.That(M2Configuration.Load(save, IPAddress.Any).Configuration.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            var nonLoopback = M2Configuration.Load(save, IPAddress.Any).Configuration;
+            Assert.That(nonLoopback.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            Assert.That(nonLoopback.M18CandidateMode, Is.EqualTo(M18CandidateMode.Disabled));
+            AssertNoTestLabAdmission(nonLoopback);
             Assert.That(M2Configuration.Load(save, IPAddress.Loopback).Configuration.ExecutionScope, Is.EqualTo(ExecutionScope.TestLab));
             Environment.SetEnvironmentVariable("ANTICHEAT_LAB_ROOT", root[..^1]);
-            Assert.That(M2Configuration.Load(save, IPAddress.Loopback).Configuration.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            var mismatchedSave = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            Assert.That(mismatchedSave.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            Assert.That(mismatchedSave.M18CandidateMode, Is.EqualTo(M18CandidateMode.Disabled));
+            AssertNoTestLabAdmission(mismatchedSave);
+            Environment.SetEnvironmentVariable("ANTICHEAT_LAB_ROOT", root);
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"TestLab\",\"M18CandidateMode\":\"ProductionCandidate\"}");
+            var candidateScopeMismatch = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            Assert.That(candidateScopeMismatch.ExecutionScope, Is.EqualTo(ExecutionScope.ObserveOnly));
+            Assert.That(candidateScopeMismatch.M18CandidateMode, Is.EqualTo(M18CandidateMode.Disabled));
+            AssertNoTestLabAdmission(candidateScopeMismatch);
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"TestLab\",\"M18CandidateMode\":\"TestLabCandidate\"}");
+            var validExplicitCandidate = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            Assert.That(validExplicitCandidate.ExecutionScope, Is.EqualTo(ExecutionScope.TestLab));
+            Assert.That(validExplicitCandidate.M18CandidateMode, Is.EqualTo(M18CandidateMode.TestLabCandidate));
+            Assert.That(M2RuleRegistry.Create("test", validExplicitCandidate.ExecutionScope)
+                .Any(x => x.Qualification == RuleQualification.TestLab), Is.True);
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"Production\",\"M18CandidateMode\":\"TestLabCandidate\"}");
+            var productionScopeMismatch = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            Assert.That(productionScopeMismatch.ExecutionScope, Is.EqualTo(ExecutionScope.Production));
+            Assert.That(productionScopeMismatch.M18CandidateMode, Is.EqualTo(M18CandidateMode.Disabled));
+            Assert.That(M2RuleRegistry.Create("test", productionScopeMismatch.ExecutionScope)
+                .All(x => x.Qualification != RuleQualification.TestLab), Is.True);
             File.WriteAllText(Path.Combine(save, "anticheat.json"), "{\"ExecutionScope\":\"Production\"}");
             Assert.That(M2Configuration.Load(save, IPAddress.Loopback).Configuration.ExperimentalLiquidScheduler, Is.False);
             File.WriteAllText(Path.Combine(save, "anticheat.json"), "{\"ExecutionScope\":\"Production\",\"ExperimentalLiquidScheduler\":true}");
@@ -112,6 +197,123 @@ public sealed class M2ContractsTests
                 ("WORLD02.CreditsRollStateAuthority", "1.0.0"), ("PROJ01.CannonFiringAuthority", "1.0.0"),
                 ("G03.NpcBuffTypeContract", "1.0.0") }));
             Assert.That(admitted.Single(x => x.RuleId == "M3.UnreviewedCandidate").Qualification, Is.EqualTo(RuleQualification.Unqualified));
+        }
+        finally { Environment.SetEnvironmentVariable("ANTICHEAT_LAB_ROOT", prior); }
+    }
+
+    private static void AssertNoTestLabAdmission(M2Configuration configuration)
+    {
+        Assert.That(configuration.ExecutionScope, Is.Not.EqualTo(ExecutionScope.TestLab));
+        var policies = M2RuleRegistry.Create("test", configuration.ExecutionScope);
+        Assert.That(policies, Is.Not.Empty);
+        Assert.That(policies.All(x => x.Qualification != RuleQualification.TestLab), Is.True);
+    }
+
+    [Test]
+    public void ExplicitM18ProductionCandidateRequiresOwnedBoundaryAndMapsIndependentControls()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "AntiCheat.Adapter.Tests", Guid.NewGuid().ToString("N"));
+        string save = Path.Combine(root, "server-save");
+        Directory.CreateDirectory(save);
+        string? prior = Environment.GetEnvironmentVariable("ANTICHEAT_LAB_ROOT");
+        try
+        {
+            Environment.SetEnvironmentVariable("ANTICHEAT_LAB_ROOT", root);
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"Production\",\"M18CandidateMode\":\"ProductionCandidate\"," +
+                "\"M18RecordObservations\":true,\"M18EnableBlocks\":false," +
+                "\"M18EnablePermanentSanctions\":true}");
+
+            var beforeMarker = M2Configuration.Load(save, IPAddress.Loopback);
+            Assert.Multiple(() =>
+            {
+                Assert.That(beforeMarker.Configuration.ExecutionScope,
+                    Is.EqualTo(ExecutionScope.Production), "Boundary failure preserves the existing production scope.");
+                Assert.That(beforeMarker.Configuration.M18CandidateMode, Is.EqualTo(M18CandidateMode.Auto));
+                Assert.That(beforeMarker.Configuration.M18EnableBlocks, Is.False);
+                Assert.That(beforeMarker.Reason, Does.Contain("candidate-disabled-production-preserved"));
+            });
+            File.WriteAllText(Path.Combine(root, ".anticheat-lab"), "test");
+
+            var loaded = M2Configuration.Load(save, IPAddress.Loopback);
+            Assert.Multiple(() =>
+            {
+                Assert.That(loaded.Reason, Is.EqualTo("isolated-loopback-production-candidate"));
+                Assert.That(loaded.Configuration.ExecutionScope, Is.EqualTo(ExecutionScope.Production));
+                Assert.That(loaded.Configuration.M18CandidateMode, Is.EqualTo(M18CandidateMode.ProductionCandidate));
+            });
+
+            var npc = M18NpcStrikeQueueOptions.ForExecutionScope(loaded.Configuration.ExecutionScope,
+                loaded.Configuration.M18CandidateMode, loaded.Configuration.M18RecordObservations,
+                loaded.Configuration.M18EnableBlocks, loaded.Configuration.M18EnablePermanentSanctions);
+            var world = M18WorldEditQueueOptions.ForExecutionScope(loaded.Configuration.ExecutionScope,
+                loaded.Configuration.M18CandidateMode, loaded.Configuration.M18RecordObservations,
+                loaded.Configuration.M18EnableBlocks);
+            var particle = M18ParticleQueueOptions.ForExecutionScope(loaded.Configuration.ExecutionScope,
+                loaded.Configuration.M18CandidateMode, loaded.Configuration.M18RecordObservations,
+                loaded.Configuration.M18EnableBlocks);
+            var important = M18ImportantItemQueueOptions.ForExecutionScope(loaded.Configuration.ExecutionScope,
+                loaded.Configuration.M18CandidateMode, loaded.Configuration.M18RecordObservations);
+            var lockHealth = M18LockHealthOptions.ForExecutionScope(loaded.Configuration.ExecutionScope,
+                loaded.Configuration.M18CandidateMode, loaded.Configuration.M18RecordObservations,
+                loaded.Configuration.M18EnableBlocks, loaded.Configuration.M18EnableServiceKick);
+            Assert.Multiple(() =>
+            {
+                Assert.That(npc.Enabled, Is.True);
+                Assert.That(npc.EnablePreForwardBlocks, Is.False);
+                Assert.That(npc.EnablePermanentSanctions, Is.False,
+                    "Production candidate config cannot grant an unqualified permanent sanction path.");
+                Assert.That(world.Enabled && !world.EnablePreForwardBlocks, Is.True);
+                Assert.That(particle.Enabled && !particle.EnablePreForwardBlocks, Is.True);
+                Assert.That(important.Enabled, Is.True);
+                Assert.That(lockHealth.Enabled, Is.True);
+                Assert.That(lockHealth.EnableServiceBlock, Is.False);
+                Assert.That(lockHealth.EnableServiceKick, Is.False,
+                    "Production candidate defaults service kicks off unless explicitly configured.");
+            });
+
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"Production\",\"M18CandidateMode\":\"ProductionCandidate\"," +
+                "\"M18EnableServiceKick\":true}");
+            var kickConfig = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            var kickOptions = M18LockHealthOptions.ForExecutionScope(kickConfig.ExecutionScope,
+                kickConfig.M18CandidateMode, kickConfig.M18RecordObservations,
+                kickConfig.M18EnableBlocks, kickConfig.M18EnableServiceKick);
+            Assert.That(kickOptions.EnableServiceKick, Is.True);
+
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"Production\",\"M18CandidateMode\":\"Auto\"}");
+            var autoProduction = M2Configuration.Load(save, IPAddress.Loopback).Configuration;
+            var autoProductionNpc = M18NpcStrikeQueueOptions.ForExecutionScope(autoProduction.ExecutionScope,
+                autoProduction.M18CandidateMode);
+            var autoProductionWorld = M18WorldEditQueueOptions.ForExecutionScope(autoProduction.ExecutionScope,
+                autoProduction.M18CandidateMode);
+            var autoProductionParticle = M18ParticleQueueOptions.ForExecutionScope(autoProduction.ExecutionScope,
+                autoProduction.M18CandidateMode);
+            var autoProductionImportant = M18ImportantItemQueueOptions.ForExecutionScope(autoProduction.ExecutionScope,
+                autoProduction.M18CandidateMode);
+            var autoProductionLock = M18LockHealthOptions.ForExecutionScope(autoProduction.ExecutionScope,
+                autoProduction.M18CandidateMode);
+            Assert.Multiple(() =>
+            {
+                Assert.That(autoProductionNpc.Enabled && !autoProductionNpc.EnablePreForwardBlocks, Is.True);
+                Assert.That(autoProductionWorld.Enabled && !autoProductionWorld.EnablePreForwardBlocks, Is.True);
+                Assert.That(autoProductionParticle.Enabled && !autoProductionParticle.EnablePreForwardBlocks, Is.True);
+                Assert.That(autoProductionImportant.Enabled, Is.True);
+                Assert.That(autoProductionLock.Enabled && !autoProductionLock.EnableServiceBlock &&
+                    !autoProductionLock.EnableServiceKick, Is.True);
+            });
+
+            File.WriteAllText(Path.Combine(save, "anticheat.json"),
+                "{\"ExecutionScope\":\"Production\",\"M18CandidateMode\":\"ProductionCandidate\"}");
+            var invalidBind = M2Configuration.Load(save, IPAddress.Any);
+            Assert.Multiple(() =>
+            {
+                Assert.That(invalidBind.Configuration.ExecutionScope,
+                    Is.EqualTo(ExecutionScope.Production), "A non-loopback bind cannot replace the existing production scope.");
+                Assert.That(invalidBind.Configuration.M18CandidateMode, Is.EqualTo(M18CandidateMode.Auto));
+                Assert.That(invalidBind.Configuration.M18EnableBlocks, Is.False);
+            });
         }
         finally { Environment.SetEnvironmentVariable("ANTICHEAT_LAB_ROOT", prior); }
     }

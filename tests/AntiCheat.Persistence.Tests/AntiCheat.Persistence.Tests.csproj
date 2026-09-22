@@ -5,5 +5,8 @@
     <PackageReference Include="NUnit" Version="4.3.2" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
-  <ItemGroup><ProjectReference Include="../../src/AntiCheat.Persistence/AntiCheat.Persistence.csproj" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../tools/AntiCheat.NetworkLab/M18EvidenceFailurePropagation.cs" Link="M18EvidenceFailurePropagation.cs" />
+    <ProjectReference Include="../../src/AntiCheat.Persistence/AntiCheat.Persistence.csproj" />
+  </ItemGroup>
 </Project>

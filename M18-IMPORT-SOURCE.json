@@ -1,0 +1,353 @@
+{
+  "source": "luna-isolated-experiment-20260915/repo working tree",
+  "sourceBaseline": "6ad4f92d2341e22d4ef5412052eb526c6a36f160",
+  "targetBase": "f58d320fe569ad825d781b5edc2e0ef5df498c33",
+  "sourceState": "uncommitted",
+  "files": [
+    {
+      "path": "src/AntiCheat.Core/Contracts.cs",
+      "sourceSha256": "d6ff0570146683d3260c94fd4e588b1da1ece3e9616b557b2f47c52f40540a5b",
+      "branchSha256": "d6ff0570146683d3260c94fd4e588b1da1ece3e9616b557b2f47c52f40540a5b"
+    },
+    {
+      "path": "src/AntiCheat.Persistence/M18ObservationJournal.cs",
+      "sourceSha256": "d668ab71afb09e2aa86e4120eca085f447ec310ba09e62681740b537a3d70c2b",
+      "branchSha256": "d668ab71afb09e2aa86e4120eca085f447ec310ba09e62681740b537a3d70c2b"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/AntiCheatPlugin.cs",
+      "sourceSha256": "cdaeee37b08ce17ccfe2541321911f9f52525a81b38a2aef323f444388288fb9",
+      "branchSha256": "cdaeee37b08ce17ccfe2541321911f9f52525a81b38a2aef323f444388288fb9"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M10SummonBudgetGuard.cs",
+      "sourceSha256": "b152ab2fe8b684c2799d143905ba42edfac5aff353a7a019c933e2447cbdc209",
+      "branchSha256": "b152ab2fe8b684c2799d143905ba42edfac5aff353a7a019c933e2447cbdc209"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M18ImportantItemCatalog.cs",
+      "sourceSha256": "490b30c84ce311d46b5a6da9d51a1a6d1c8aa097320fe547b2f97814063cab28",
+      "branchSha256": "490b30c84ce311d46b5a6da9d51a1a6d1c8aa097320fe547b2f97814063cab28"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M18ImportantItemRewardObserver.cs",
+      "sourceSha256": "2aed4c0dd390ccea9718e9c21d0c2e95c26ce072ba1205fb5424c0124ca3e3a7",
+      "branchSha256": "2aed4c0dd390ccea9718e9c21d0c2e95c26ce072ba1205fb5424c0124ca3e3a7"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M18LockHealthContext.cs",
+      "sourceSha256": "6575aca88609c01c59ac60490abe532c087bf86920d55f4a5c4701316df3fa3d",
+      "branchSha256": "6575aca88609c01c59ac60490abe532c087bf86920d55f4a5c4701316df3fa3d"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M18ParticlePacketReader.cs",
+      "sourceSha256": "5f2bae6ce21e01a0e1214a0f967c304ba5e0a9495cc7dea07371a3dbf5551465",
+      "branchSha256": "5f2bae6ce21e01a0e1214a0f967c304ba5e0a9495cc7dea07371a3dbf5551465"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M2BusinessAdapter.cs",
+      "sourceSha256": "9355140d64c222735c9a03959881a011e5dfd93cc3a3e26757905efa3e17c7a5",
+      "branchSha256": "9355140d64c222735c9a03959881a011e5dfd93cc3a3e26757905efa3e17c7a5"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M2Configuration.cs",
+      "sourceSha256": "82e916f11c5118b1d14e1ed1887c31bf898fc696feba08c26fa64edc3ba26345",
+      "branchSha256": "82e916f11c5118b1d14e1ed1887c31bf898fc696feba08c26fa64edc3ba26345"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M2PacketReader.cs",
+      "sourceSha256": "77f22c2eca95a41abf595ca29318493de48de0aa8080b7c850eb33ce7e65d5be",
+      "branchSha256": "77f22c2eca95a41abf595ca29318493de48de0aa8080b7c850eb33ce7e65d5be"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M2RuleRegistry.cs",
+      "sourceSha256": "a1030385eb7d59ca15a02d41376a8af12bfdf14979c3b30f0db54191e99361fc",
+      "branchSha256": "a1030385eb7d59ca15a02d41376a8af12bfdf14979c3b30f0db54191e99361fc"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M4VitalContexts.cs",
+      "sourceSha256": "d9dfba88d060b94531ddadcebc423ed54dccdb21175cfd37c9640c8193fdcd2b",
+      "branchSha256": "d9dfba88d060b94531ddadcebc423ed54dccdb21175cfd37c9640c8193fdcd2b"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M7NpcStrikeCauseContexts.cs",
+      "sourceSha256": "21d8e95065d2bc340e47238cc3da7a6dad90e0267fbd8d1d2322cabfb21662a0",
+      "branchSha256": "21d8e95065d2bc340e47238cc3da7a6dad90e0267fbd8d1d2322cabfb21662a0"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M8MovementObservations.cs",
+      "sourceSha256": "2697d54807041de221a0d04e83897fca311b5709446c1c957adb5bf6a006ffd0",
+      "branchSha256": "2697d54807041de221a0d04e83897fca311b5709446c1c957adb5bf6a006ffd0"
+    },
+    {
+      "path": "src/AntiCheat.Plugin.TShock/M8NpcStrikeTransactions.cs",
+      "sourceSha256": "a0f7ae0d29daf52d372fe70c8d450d129dcc0cde2dc43d4ec705b91e319254c4",
+      "branchSha256": "a0f7ae0d29daf52d372fe70c8d450d129dcc0cde2dc43d4ec705b91e319254c4"
+    },
+    {
+      "path": "src/AntiCheat.Rules/InventoryRules.cs",
+      "sourceSha256": "6156a795a7d26819ecf65cad96f494396fd1f601ff9ef0438d17f15c60c496a9",
+      "branchSha256": "6156a795a7d26819ecf65cad96f494396fd1f601ff9ef0438d17f15c60c496a9"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18ExecutionModePolicy.cs",
+      "sourceSha256": "030eda162d35dafa35c98082bac2f08ebd3d835f004357262c26fd76672c62d9",
+      "branchSha256": "030eda162d35dafa35c98082bac2f08ebd3d835f004357262c26fd76672c62d9"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18GroundItemClearQueueRules.cs",
+      "sourceSha256": "9beee6a88d9ac403aa1bd4bcd15dba82064c0c54b7672b769aeaff573dcf078c",
+      "branchSha256": "9beee6a88d9ac403aa1bd4bcd15dba82064c0c54b7672b769aeaff573dcf078c"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18ImportantItemQueueRules.cs",
+      "sourceSha256": "c665b9addaee33cd29389a2049aa574503f83d21a94f7e94b621f2a4beb57d1f",
+      "branchSha256": "c665b9addaee33cd29389a2049aa574503f83d21a94f7e94b621f2a4beb57d1f"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18LockHealthRules.cs",
+      "sourceSha256": "eaa5e3cb91e0b23fb40166b17cb96aca4a67f579afff2fcbf17b69c78958f055",
+      "branchSha256": "eaa5e3cb91e0b23fb40166b17cb96aca4a67f579afff2fcbf17b69c78958f055"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18NpcStrikeQueueRules.cs",
+      "sourceSha256": "cf4928923d691609dc0e5206062c7a7e419bfb13f4e2db2a7c20e189b519e6de",
+      "branchSha256": "cf4928923d691609dc0e5206062c7a7e419bfb13f4e2db2a7c20e189b519e6de"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18ParticleQueueRules.cs",
+      "sourceSha256": "ede7ce614781eaf1fea161504521cd76bfa763618dbeb9e7c4316c45bbbbc328",
+      "branchSha256": "ede7ce614781eaf1fea161504521cd76bfa763618dbeb9e7c4316c45bbbbc328"
+    },
+    {
+      "path": "src/AntiCheat.Rules/M18WorldEditQueueRules.cs",
+      "sourceSha256": "4d15c59d57a913a1bf1965bcb653967f05ec9b864acbe586da7e8edc63b960a6",
+      "branchSha256": "4d15c59d57a913a1bf1965bcb653967f05ec9b864acbe586da7e8edc63b960a6"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/AntiCheat.Adapter.Tests.csproj",
+      "sourceSha256": "7a05c1faa0b64f68d4ff6701036b5de29535f0eccd780cac68109e3fb9596e64",
+      "branchSha256": "290642892a4c9c5f2c8847f94203622cc670e34b8bc8063368972823d656f907"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M11SentryNativeTests.cs",
+      "sourceSha256": "f01508e3c0e4a287452d414281488b97617ef8e1f4daa3ce8e24f765886f89be",
+      "branchSha256": "f01508e3c0e4a287452d414281488b97617ef8e1f4daa3ce8e24f765886f89be"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M16ItemStructureTests.cs",
+      "sourceSha256": "9d928d9c682fa467f1c0a056e912d52ea88d7806d166c781a74c9cccde494ec0",
+      "branchSha256": "9d928d9c682fa467f1c0a056e912d52ea88d7806d166c781a74c9cccde494ec0"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18ImportantItemTests.cs",
+      "sourceSha256": "0b4ca695acddb5cb32e868a3ed27310eae684b503104b6bc82d9eefa27d962d3",
+      "branchSha256": "0b4ca695acddb5cb32e868a3ed27310eae684b503104b6bc82d9eefa27d962d3"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18LockHealthContextTests.cs",
+      "sourceSha256": "305dda37ae52bf2d1bd037832e20159f6adb3fe59f421bf7b6cb9ad9806782b8",
+      "branchSha256": "305dda37ae52bf2d1bd037832e20159f6adb3fe59f421bf7b6cb9ad9806782b8"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18LockHealthRootTests.cs",
+      "sourceSha256": "7cf27b46bfb071873c166a27f2e06c90fe60110ae261c34b42d324223fb5c62b",
+      "branchSha256": "7cf27b46bfb071873c166a27f2e06c90fe60110ae261c34b42d324223fb5c62b"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18ParticlePacketReaderTests.cs",
+      "sourceSha256": "466f68d57760d1e42825ff32d019a6653db0aeda0a250d246a6ec1880af1b91f",
+      "branchSha256": "466f68d57760d1e42825ff32d019a6653db0aeda0a250d246a6ec1880af1b91f"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18ParticleQueueTests.cs",
+      "sourceSha256": "30997ff4d8283570347a5f5e6ff30e9c0f5cd420001320b3fbcfd4cd4612dc6a",
+      "branchSha256": "30997ff4d8283570347a5f5e6ff30e9c0f5cd420001320b3fbcfd4cd4612dc6a"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18SignExploitTests.cs",
+      "sourceSha256": "ef4557721e2989f3aa2d77e90d530fa308afd5c87ec0268b2416ea4c9ad469cc",
+      "branchSha256": "ef4557721e2989f3aa2d77e90d530fa308afd5c87ec0268b2416ea4c9ad469cc"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M18WorldEditTests.cs",
+      "sourceSha256": "ec4ce7b6c5361f31ca0ea761a678cea33803fc5d0d8a8e7bcf80e1063728e7fb",
+      "branchSha256": "ec4ce7b6c5361f31ca0ea761a678cea33803fc5d0d8a8e7bcf80e1063728e7fb"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M2ContractsTests.cs",
+      "sourceSha256": "c06f5baae8eaadcef4f0a81fb54d4eede89d76ceabf63a8d9f21a0c053acfd90",
+      "branchSha256": "c06f5baae8eaadcef4f0a81fb54d4eede89d76ceabf63a8d9f21a0c053acfd90"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M3WorldInputTests.cs",
+      "sourceSha256": "60b44d02d392627ad22ae05c565366e13f3dab57e8e90277e2d1af57c57e05bd",
+      "branchSha256": "60b44d02d392627ad22ae05c565366e13f3dab57e8e90277e2d1af57c57e05bd"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M4VitalContextTests.cs",
+      "sourceSha256": "0a0e3c23442019b6f046ae2505d4addc302cdcc92ab0bacbfd77ca6d60852803",
+      "branchSha256": "0a0e3c23442019b6f046ae2505d4addc302cdcc92ab0bacbfd77ca6d60852803"
+    },
+    {
+      "path": "tests/AntiCheat.Adapter.Tests/M6NpcStrikeTests.cs",
+      "sourceSha256": "5d978bf32bc70c8e8a7980aded95768b207a12c19839a1e4aa5c8ad42c9b593e",
+      "branchSha256": "5d978bf32bc70c8e8a7980aded95768b207a12c19839a1e4aa5c8ad42c9b593e"
+    },
+    {
+      "path": "tests/AntiCheat.Persistence.Tests/AntiCheat.Persistence.Tests.csproj",
+      "sourceSha256": "fb2e8281845caa66d2936302536d057fc622163e687b1d4f5a4f85f8b2de12f2",
+      "branchSha256": "fb2e8281845caa66d2936302536d057fc622163e687b1d4f5a4f85f8b2de12f2"
+    },
+    {
+      "path": "tests/AntiCheat.Persistence.Tests/M18EvidenceFailurePropagationTests.cs",
+      "sourceSha256": "e446f7305e9dd773c62f6f98d9d9a67a835d470c7b53f3ad1944f4470318ce3e",
+      "branchSha256": "e446f7305e9dd773c62f6f98d9d9a67a835d470c7b53f3ad1944f4470318ce3e"
+    },
+    {
+      "path": "tests/AntiCheat.Persistence.Tests/M18ObservationJournalTests.cs",
+      "sourceSha256": "a9258b9a9fb57b975dc083ee80fa46ac21ea44b69e1048c17001626ca9928b39",
+      "branchSha256": "a9258b9a9fb57b975dc083ee80fa46ac21ea44b69e1048c17001626ca9928b39"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/InventoryRuleTests.cs",
+      "sourceSha256": "ef833847137dc7459e51a27c2fd4add919cf56939db406b274dfc5e52e8a3cd4",
+      "branchSha256": "ef833847137dc7459e51a27c2fd4add919cf56939db406b274dfc5e52e8a3cd4"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18GroundItemClearQueueRuleTests.cs",
+      "sourceSha256": "44a11ed167503777c5a994801216639f7e6a685c8f6d7b915ea67c598b6031d0",
+      "branchSha256": "44a11ed167503777c5a994801216639f7e6a685c8f6d7b915ea67c598b6031d0"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18ImportantItemQueueRuleTests.cs",
+      "sourceSha256": "491ab76440d7bb23d8423204b4ff3f3489ee4051680878eaa99f4650c1ec9dbe",
+      "branchSha256": "491ab76440d7bb23d8423204b4ff3f3489ee4051680878eaa99f4650c1ec9dbe"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18LockHealthRuleTests.cs",
+      "sourceSha256": "5792799e0f050b535ee1f1241023d71ecedd6e22deb0b93756323580d609cd05",
+      "branchSha256": "5792799e0f050b535ee1f1241023d71ecedd6e22deb0b93756323580d609cd05"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18NpcStrikeQueueRuleTests.cs",
+      "sourceSha256": "3b656158d6a808c776bf01e2d0e02b97b43308a1b7bc6476ab5d935883262768",
+      "branchSha256": "3b656158d6a808c776bf01e2d0e02b97b43308a1b7bc6476ab5d935883262768"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18ParticleQueueRuleTests.cs",
+      "sourceSha256": "4600a6cb3e660073c729cf6c159010035399418aca7bd1e815be69cbcf53a65b",
+      "branchSha256": "4600a6cb3e660073c729cf6c159010035399418aca7bd1e815be69cbcf53a65b"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18R2ReviewRegressionTests.cs",
+      "sourceSha256": "80d325d19ba31e78a913f2f4e3904276cc92f5b8898a5aad92a3bb02d2426d92",
+      "branchSha256": "80d325d19ba31e78a913f2f4e3904276cc92f5b8898a5aad92a3bb02d2426d92"
+    },
+    {
+      "path": "tests/AntiCheat.Rules.Tests/M18WorldEditQueueRuleTests.cs",
+      "sourceSha256": "fc33cf96d07d7b5516a4e629cdf06cadc029aac8d94b7a970310c481ebf95f90",
+      "branchSha256": "fc33cf96d07d7b5516a4e629cdf06cadc029aac8d94b7a970310c481ebf95f90"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/GameplayScaffold.cs",
+      "sourceSha256": "21620f20c2bbe11bde8d364fca90a4779996f7080dbde82bdcac4f8166987f4e",
+      "branchSha256": "21620f20c2bbe11bde8d364fca90a4779996f7080dbde82bdcac4f8166987f4e"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M10SummonScaffold.cs",
+      "sourceSha256": "0cc004ed42703d8fb65d0616dd2361dffae57d276900cc74b3b81b32369e1c82",
+      "branchSha256": "0cc004ed42703d8fb65d0616dd2361dffae57d276900cc74b3b81b32369e1c82"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18ButcherEnumerationFixture.cs",
+      "sourceSha256": "854614dd1f06799e58e2d7e4c63471775fb8c77e771e3983b9d5f5a4f72eb6f8",
+      "branchSha256": "854614dd1f06799e58e2d7e4c63471775fb8c77e771e3983b9d5f5a4f72eb6f8"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18ItemDropFixture.cs",
+      "sourceSha256": "3835cdfa9b1c2d68439fc7809b48b3d474fc5ed56dd9c6a1cd84eb900584bf96",
+      "branchSha256": "3835cdfa9b1c2d68439fc7809b48b3d474fc5ed56dd9c6a1cd84eb900584bf96"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18LockHealthFixture.cs",
+      "sourceSha256": "0d1ba07a9601b43257ef980d7a229d406f9640fc95530ec24c0b991dce926459",
+      "branchSha256": "0d1ba07a9601b43257ef980d7a229d406f9640fc95530ec24c0b991dce926459"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18LowLifeFixture.cs",
+      "sourceSha256": "dca0cf40a14c2cdd5a262fd0620cad927df4c367ad197efb9ea13ee64916e743",
+      "branchSha256": "dca0cf40a14c2cdd5a262fd0620cad927df4c367ad197efb9ea13ee64916e743"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18RewardFixture.cs",
+      "sourceSha256": "98313dc7e748915071773b6080c466e465dc685adc46ed8e2c93c72b46e1519f",
+      "branchSha256": "98313dc7e748915071773b6080c466e465dc685adc46ed8e2c93c72b46e1519f"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18WipeItemsFixture.cs",
+      "sourceSha256": "21026d2655bb0ba94a1fbd59ff9c405f3466a5ed72ee09a3af2ff9c98f49b6a6",
+      "branchSha256": "21026d2655bb0ba94a1fbd59ff9c405f3466a5ed72ee09a3af2ff9c98f49b6a6"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18WorldEditFixture.cs",
+      "sourceSha256": "912ea92178427e967cd77b2b85ff011a3e47c9f8e1b17762f0c07f5a59244215",
+      "branchSha256": "912ea92178427e967cd77b2b85ff011a3e47c9f8e1b17762f0c07f5a59244215"
+    },
+    {
+      "path": "tools/AntiCheat.GameplayScaffold/M18WorldModeFixture.cs",
+      "sourceSha256": "504d1296a8e8823384f042ae06d15a0279f0418482f43ac5b4ab0f3076bf89eb",
+      "branchSha256": "504d1296a8e8823384f042ae06d15a0279f0418482f43ac5b4ab0f3076bf89eb"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18EvidenceFailurePropagation.cs",
+      "sourceSha256": "a19f66ea0ce7e88d88decc640f350788df3ba53c60c67c65c620fea90bbf48c8",
+      "branchSha256": "a19f66ea0ce7e88d88decc640f350788df3ba53c60c67c65c620fea90bbf48c8"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18ImportantRewardScenario.cs",
+      "sourceSha256": "4d6648fac544caae4a8fdd3ce55b23af4f4fe72ea5f7f9d3cca29a49df648857",
+      "branchSha256": "4d6648fac544caae4a8fdd3ce55b23af4f4fe72ea5f7f9d3cca29a49df648857"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18ItemDropScenario.cs",
+      "sourceSha256": "2d04afff452ab8af26e710384dabc0fd956d0585f8a147dd201b4fb5ebbaa570",
+      "branchSha256": "2d04afff452ab8af26e710384dabc0fd956d0585f8a147dd201b4fb5ebbaa570"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18LockHealthScenario.cs",
+      "sourceSha256": "c69197f1b6cec9acb6348a218ae2cf144a716a5a63d0952a6e5c3d514f1f8bea",
+      "branchSha256": "c69197f1b6cec9acb6348a218ae2cf144a716a5a63d0952a6e5c3d514f1f8bea"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18NpcStrikeScenario.cs",
+      "sourceSha256": "19cfd29367ccdd365d0eaeeeb0874db942583da13cb52aad1a2e416ce6aa2e3f",
+      "branchSha256": "19cfd29367ccdd365d0eaeeeb0874db942583da13cb52aad1a2e416ce6aa2e3f"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18P1BUnknownProjectileScenario.cs",
+      "sourceSha256": "43d791b8e58e626aa887217bd825f9b147dca0aee91866eea63438176d782d73",
+      "branchSha256": "43d791b8e58e626aa887217bd825f9b147dca0aee91866eea63438176d782d73"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18ParticleScenario.cs",
+      "sourceSha256": "7eb78ede84103987a0d38394fc7780a99675eafc559105f1cdb4bffe2d35a460",
+      "branchSha256": "7eb78ede84103987a0d38394fc7780a99675eafc559105f1cdb4bffe2d35a460"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M18WorldEditScenario.cs",
+      "sourceSha256": "facd976f96725fed45ce8452a1d80a2000708a4c52fee862baa1bd2797b50ad7",
+      "branchSha256": "facd976f96725fed45ce8452a1d80a2000708a4c52fee862baa1bd2797b50ad7"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/M4ObservedToolReplay.cs",
+      "sourceSha256": "4f11e75982529e8a58dd6848a6b5c8e097c1b79caf8452d221ec58c5540aa3db",
+      "branchSha256": "4f11e75982529e8a58dd6848a6b5c8e097c1b79caf8452d221ec58c5540aa3db"
+    },
+    {
+      "path": "tools/AntiCheat.NetworkLab/Program.cs",
+      "sourceSha256": "cbee6a83048afe65c689fc9bc610a261355bc80a2531f4a1cda5f925e5319bd7",
+      "branchSha256": "cbee6a83048afe65c689fc9bc610a261355bc80a2531f4a1cda5f925e5319bd7"
+    }
+  ]
+}

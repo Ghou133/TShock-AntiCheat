@@ -25,9 +25,23 @@ bool gameplaySafety = args.Length == 4 && args[3] == "gameplay-safety";
 bool gameplayBusiness = args.Length == 4 && args[3] == "gameplay-business";
 bool protectionCases = args.Length == 5 && args[3] == "protection-cases";
 string protectionSlice = protectionCases ? args[4] : "";
-if (protectionCases && protectionSlice is not ("application" or "craft" or "world" or "teleport" or "quickstack" or "summon" or "sentry" or "solartablet" or "classemblems" or "m16equipment" or "m16combat" or "receiveisolation" or "liquidcontrolon" or "liquidcontroloff" or "golemlegal" or "displaysafety" or "objectsafety" or "objectplacement" or "lowcontext" or "resumelowcontext" or "m15lowcontext" or "tileentityplacement" or "m16-world-paint" or "m16-request-egress" or "m16-connection-timeouts" or "m16inventoryslots" or "m16itemstructure" or "m17containersort" or "m17-command-work" or "m17progressionworld" or "m18storage" or "m18resetinputs"))
+if (protectionCases && protectionSlice is not ("application" or "craft" or "world" or "teleport" or "quickstack" or "summon" or "sentry" or "solartablet" or "classemblems" or "m16equipment" or "m16combat" or "receiveisolation" or "liquidcontrolon" or "liquidcontroloff" or "golemlegal" or "displaysafety" or "objectsafety" or "objectplacement" or "lowcontext" or "resumelowcontext" or "m15lowcontext" or "tileentityplacement" or "m16-world-paint" or "m16-request-egress" or "m16-connection-timeouts" or "m16inventoryslots" or "m16itemstructure" or "m17containersort" or "m17-command-work" or "m17progressionworld" or "m18storage" or "m18resetinputs" or "m18-p0-a" or "m18-p0-b" or "m18-p0-b-batch" or "m18-p0-b-position" or "m18-p0-b-replacement" or "m18-p0-b-tile-replacement" or "m18-p0-b-region-tile" or "m18-p0-c" or "m18-p0-d" or "m18-p1-a" or "m18-p1-c" or "m18-p1-b-unknown-projectile"))
     throw new ArgumentException("Unknown protection slice.");
 bool helloDiagnostics = Environment.GetEnvironmentVariable("ANTICHEAT_M7_HELLO_DIAGNOSTICS") == "1";
+bool m18ProductionCandidate = Environment.GetEnvironmentVariable("ANTICHEAT_M18_PRODUCTION_CANDIDATE") == "1";
+bool m18PermanentSanctionCandidate = Environment.GetEnvironmentVariable("ANTICHEAT_M18_PERMANENT_SANCTION_CANDIDATE") == "1";
+bool m18ItemDropSanctionCandidate = Environment.GetEnvironmentVariable("ANTICHEAT_M18_ITEM_DROP_SANCTION_CANDIDATE") == "1";
+bool m18LockHealthServiceKickCandidate = Environment.GetEnvironmentVariable("ANTICHEAT_M18_LOCK_HEALTH_SERVICE_KICK_CANDIDATE") == "1";
+if (m18ProductionCandidate && (m18PermanentSanctionCandidate || m18ItemDropSanctionCandidate || m18LockHealthServiceKickCandidate))
+    throw new ArgumentException("M18 production and permanent-sanction candidates are mutually exclusive.");
+if (m18PermanentSanctionCandidate && (!protectionCases || protectionSlice != "m18-p0-a"))
+    throw new ArgumentException("M18 permanent-sanction candidate requires the isolated m18-p0-a slice.");
+if (m18ItemDropSanctionCandidate && (!protectionCases || protectionSlice != "m18-p0-d"))
+    throw new ArgumentException("M18 item-drop sanction candidate requires the isolated m18-p0-d slice.");
+if (m18LockHealthServiceKickCandidate && (!protectionCases || protectionSlice != "m18-p1-a"))
+    throw new ArgumentException("M18 lock-health service-kick candidate requires the isolated m18-p1-a slice.");
+if (new[] { m18PermanentSanctionCandidate, m18ItemDropSanctionCandidate, m18LockHealthServiceKickCandidate }.Count(x => x) > 1)
+    throw new ArgumentException("M18 explicit TestLab candidates are mutually exclusive.");
 bool m10HandshakeProbe = handshakeCases && helloDiagnostics;
 string pacingValue = Environment.GetEnvironmentVariable("ANTICHEAT_LAB_CONNECTION_PACING_MS") ?? "0";
 if (!int.TryParse(pacingValue, out int connectionPacingMilliseconds) || connectionPacingMilliseconds is < 0 or > 500)
@@ -38,7 +52,8 @@ int loadSamplesPerPhase = 80, maximumLoadSeconds = 30;
 if (args.Length == 6 && (!int.TryParse(args[4], out loadSamplesPerPhase) || loadSamplesPerPhase is < 68 or > 256 ||
     !int.TryParse(args[5], out maximumLoadSeconds) || maximumLoadSeconds is < 10 or > 30))
     throw new ArgumentOutOfRangeException(nameof(args), "Use 68..256 samples per phase and 10..30 maximum load seconds.");
-string expectedScope = productionIdentity || protectionCases && protectionSlice == "m17progressionworld" ? "Production" : "TestLab";
+string expectedScope = productionIdentity || m18ProductionCandidate ||
+    protectionCases && protectionSlice == "m17progressionworld" ? "Production" : "TestLab";
 if (args.Length == 4 && args[3] == "protection-cases")
     throw new ArgumentException("protection-cases requires an explicit protection slice.");
 string actualScenario = protectionCases ? "protection-cases:" + protectionSlice : args.Length > 3 ? args[3] : "regression";
@@ -115,6 +130,9 @@ foreach (var arg in new[] { "-config", Path.Combine(run, "serverconfig.txt"), "-
 info.Environment["ANTICHEAT_LAB_ROOT"] = run;
 info.Environment["ANTICHEAT_M16_COMBAT_DIAGNOSTICS"] = protectionCases && protectionSlice == "m16combat" ? "1" : "0";
 info.Environment["ANTICHEAT_M18_RESET_DIAGNOSTICS"] = protectionCases && protectionSlice == "m18resetinputs" ? "1" : "0";
+info.Environment["ANTICHEAT_M18_PERMANENT_SANCTION_CANDIDATE"] = m18PermanentSanctionCandidate ? "1" : "0";
+info.Environment["ANTICHEAT_M18_ITEM_DROP_SANCTION_CANDIDATE"] = m18ItemDropSanctionCandidate ? "1" : "0";
+info.Environment["ANTICHEAT_M18_LOCK_HEALTH_SERVICE_KICK_CANDIDATE"] = m18LockHealthServiceKickCandidate ? "1" : "0";
 if (mcpIdentity) info.Environment["TERRARIA_MCP_SERVER_CONFIG"] = Path.Combine(run, "server-bridge.json");
 info.Environment["DOTNET_BUNDLE_EXTRACT_BASE_DIR"] = Path.Combine(run, "bundle-cache");
 if (vanilla || inventoryCases || observedReplay || maintenanceLoad || runtimeDiagnostics || gameplaySafety || gameplayBusiness || (protectionCases && protectionSlice is not ("solartablet" or "classemblems" or "m16equipment" or "m16combat" or "golemlegal" or "lowcontext" or "resumelowcontext" or "m15lowcontext" or "m18resetinputs")))
@@ -140,10 +158,12 @@ try
     }
     else if (protectionCases)
     {
-        var host = new M4ObservedReplayHarness(run, report, name => Connect(name), ConsoleCommand,
+            var host = new M4ObservedReplayHarness(run, report, name => Connect(name), ConsoleCommand,
             FixtureSnapshot, () => console.ToArray(), () => ready && verified, Assert,
             (name, account, rule) => provedAccounts.Add((name, account, rule)),
-            (name, address) => Connect(name, localBind: address));
+            (name, address) => Connect(name, localBind: address),
+            (name, uuid) => Connect(name, uuid),
+            RestartServerForScenario);
         switch (protectionSlice)
         {
             case "application": await M9ApplicationScenario.RunAsync(host); break;
@@ -168,6 +188,28 @@ try
             case "m16itemstructure": await M16ItemStructureScenario.RunAsync(host); break;
             case "m18storage": await M18StorageScenario.RunAsync(host, Path.Combine(AppContext.BaseDirectory, "native-sort", "NativeSortCorpus.dll")); break;
             case "m18resetinputs": await M18ResetInputsScenario.RunAsync(host, (name, uuid) => Connect(name, uuid)); break;
+            case "m18-p0-a": await M18NpcStrikeScenario.RunAsync(host); break;
+            case "m18-p0-b": await M18WorldEditScenario.RunAsync(host); break;
+            case "m18-p0-b-batch": await M18WorldEditScenario.RunBatchAsync(host); break;
+            case "m18-p0-b-position": await M18WorldEditScenario.RunPositionInjectionAsync(host); break;
+            case "m18-p0-b-replacement": await M18WorldEditScenario.RunReplacementLegalityAsync(host); break;
+            case "m18-p0-b-tile-replacement": await M18WorldEditScenario.RunTileReplacementLegalityAsync(host); break;
+            case "m18-p0-b-region-tile": await M18WorldEditScenario.RunProtectedTilePermissionAsync(host); break;
+            case "m18-p0-c":
+                await M18ParticleScenario.RunAsync(host);
+                string particleEvidence = Path.Combine(report, "m18-p0-c", "m18-p0-c-evidence.json");
+                if (File.Exists(particleEvidence))
+                {
+                    using var particleDocument = JsonDocument.Parse(await File.ReadAllTextAsync(particleEvidence));
+                    status = particleDocument.RootElement.TryGetProperty("status", out var particleStatus) &&
+                        particleStatus.GetString() == "partial" ? "prepared_only" : "passed";
+                }
+                else status = "passed";
+                break;
+            case "m18-p0-d": await M18ItemDropScenario.RunAsync(host); break;
+            case "m18-p1-a": await M18LockHealthScenario.RunAsync(host); break;
+            case "m18-p1-c": await M18ImportantRewardScenario.RunAsync(host); break;
+            case "m18-p1-b-unknown-projectile": await M18P1BUnknownProjectileScenario.RunAsync(host); break;
             case "m17progressionworld": await M17ProgressionWorldScenario.RunAsync(host); break;
             case "m17containersort": await M17ContainerSortScenario.RunAsync(host, Path.Combine(AppContext.BaseDirectory, "native-sort", "NativeSortCorpus.dll")); break;
             case "golemlegal": await M13GolemLegalScenario.RunAsync(host); break;
@@ -577,7 +619,7 @@ finally
     var result = new { schemaVersion = 1, status, failure, requestedScenario, actualScenario, target = "Terraria 1.4.5.8 / protocol 326", scope = expectedScope, actualScope, productionHardRules,
         evidenceSource = vanilla ? "interactive-client-identity-requires-separate-launch-and-gameplay-evidence"
             : observedReplay ? "recorded-tool-frame-replay-with-synthetic-controls" : "synthetic-tcp",
-        syntheticClient = !vanilla, vanillaGui = vanilla ? "requires-scenario-evidence" : "not_executed", withoutAntiCheat, inventoryCases, productionIdentity, mcpIdentity, validatedProductionRuleScope = mcpIdentity ? "A01.EmojiSenderMismatch/m2.1 only" : null, handshakeCases, m10HandshakeProbe, crashRecovery, runtimeDiagnostics, gameplaySafety, gameplayBusiness, protectionCases, helloDiagnostics,
+        syntheticClient = !vanilla, vanillaGui = vanilla ? "requires-scenario-evidence" : "not_executed", withoutAntiCheat, inventoryCases, productionIdentity, mcpIdentity, m18ProductionCandidate, m18PermanentSanctionCandidate, m18ItemDropSanctionCandidate, m18LockHealthServiceKickCandidate, validatedProductionRuleScope = mcpIdentity ? "A01.EmojiSenderMismatch/m2.1 only" : null, handshakeCases, m10HandshakeProbe, crashRecovery, runtimeDiagnostics, gameplaySafety, gameplayBusiness, protectionCases, helloDiagnostics,
         revokedPacketDiagnostics = productionIdentity ? "TestLab-only trace not emitted; incident revoked flag and recipient/SSC side effects checked" : protectionCases && protectionSlice == "m17progressionworld" ? "Not applicable: E01 Production legal/Unknown scenario has no sanction event" : "TestLab trace required",
         isolatedDirectory = run, loopbackPort = port,
         actualRuntimeIdentityVerified = verified, batchedWriteCalls = clients.Sum(x => x.ProofBatches),
@@ -758,6 +800,19 @@ async Task StopServer()
             forcedThisStop, serverExitCode, runSafetyClean, elapsedMs = shutdownTimer.ElapsedMilliseconds },
             new JsonSerializerOptions { WriteIndented = true }));
     started = false;
+}
+
+async Task RestartServerForScenario()
+{
+    DevRunLifecycle.Check();
+    foreach (var client in clients.Where(client => !client.Disposed).ToArray())
+        await client.DisposeAsync();
+    await StopServer();
+    if (forcedStop || !runSafetyClean || serverExitCode != 0)
+        throw new InvalidOperationException("Scenario restart requires a clean enforcement shutdown.");
+    server.Close();
+    await StartServer(true);
+    restarted = true;
 }
 
 async Task Capture(StreamReader reader, string name, bool observe)
@@ -1755,10 +1810,13 @@ sealed class LabClient : IAsyncDisposable
     public List<(int Player, int Emote)> Bubbles { get; } = new();
     public List<(int Player, int Slot, int Item, int Stack, int Prefix)> InventoryUpdates { get; } = new();
     public Dictionary<(int Player, int Slot), byte> InventorySlotFlags { get; } = new();
+    public List<(byte Packet, int Item, int Stack, int Type)> WorldItemUpdates { get; } = new();
+    public List<(int Item, int Owner)> ItemOwnerUpdates { get; } = new();
     public List<(int Player, int Loadout, ushort Visibility)> LoadoutUpdates { get; } = new();
     public ushort? LiquidModuleId { get; set; }
     public List<(int X, int Y, byte Liquid, byte Type)> LiquidUpdates { get; } = new();
     public int LiquidUpdatesDropped { get; private set; }
+    public List<(ushort Module, byte Type)> ParticleModules { get; } = new();
     public ushort? LeashedModuleId { get; set; }
     public List<(int Slot, int Type, int X, int Y)> LeashedFullSyncs { get; } = new();
     public int LeashedFullSyncsDropped { get; private set; }
@@ -1766,6 +1824,7 @@ sealed class LabClient : IAsyncDisposable
     public List<(uint Key, int Type, int Damage)> ProjectileClaims { get; } = new();
     public List<(uint Key, float X, float Y)> ProjectileRemovals { get; } = new();
     public List<(int Target, int Damage, bool Pvp)> HurtDeclarations { get; } = new();
+    public List<(byte Packet, int PayloadBytes, string PayloadHex)> ServerVitalFrames { get; } = new();
     public List<(ushort Module, bool Approved)> CraftResponses { get; } = new();
     public List<(int Slot, byte Generation, int Type)> NpcTypes { get; } = new();
     public List<(int Slot, byte Generation, int Type)> NpcStatueTypes { get; } = new();
@@ -2076,12 +2135,19 @@ sealed class LabClient : IAsyncDisposable
         _positionX = x; _positionY = y;
         return Send(13, WriteControls);
     }
+    public Task SelectItem(byte slot)
+    {
+        if (_vanillaPeerCapture) throw new InvalidOperationException("The vanilla peer observer does not select experimental items.");
+        _selectedItem = slot;
+        return Send(13, WriteControls);
+    }
     public byte[] CameraControls() => Packet(13, w => WriteControls(w, true));
+    byte _selectedItem;
     private void WriteControls(BinaryWriter writer) => WriteControls(writer, false);
     private void WriteControls(BinaryWriter writer, bool camera)
     {
         writer.Write(Slot); writer.Write(_usingItem ? (byte)32 : (byte)0);
-        writer.Write((byte)0); writer.Write((byte)0); writer.Write(camera ? (byte)32 : (byte)0); writer.Write((byte)0);
+        writer.Write((byte)0); writer.Write((byte)0); writer.Write(camera ? (byte)32 : (byte)0); writer.Write(_selectedItem);
         writer.Write(_positionX > 0 ? _positionX : _spawnX * 16f);
         writer.Write(_positionY > 0 ? _positionY : _spawnY * 16f - 42);
         if (camera) { writer.Write(2468f); writer.Write(1357f); }
@@ -2102,7 +2168,12 @@ sealed class LabClient : IAsyncDisposable
                 await Send(13, WriteControls);
             }
         }
-        catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
+        // A peer-side ban closes the socket concurrently with the heartbeat.
+        // NetworkStream can surface that close as InvalidOperationException
+        // instead of IOException; it is a bounded transport-lifecycle race,
+        // not a scenario assertion failure.
+        catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException or InvalidOperationException)
+        { _transport.Failure(ex, "heartbeat", _stop.IsCancellationRequested); }
     }
     async Task ReadLoop()
     {
@@ -2166,6 +2237,8 @@ sealed class LabClient : IAsyncDisposable
     void Observe(byte[] packet)
     {
         byte id = packet[0]; _counts[id] = _counts.GetValueOrDefault(id) + 1;
+        if (id is 16 or 42 or 117 && ServerVitalFrames.Count < 2048)
+            ServerVitalFrames.Add((id, packet.Length - 1, Convert.ToHexString(packet)));
         // Decode only the explicitly selected native LeashedEntity module's FullSync header.
         // Other packet82 modules, including chat/login credentials, are never retained here.
         if (id == 82 && LeashedModuleId is { } leashedModule && packet.Length >= 4 &&
@@ -2190,6 +2263,12 @@ sealed class LabClient : IAsyncDisposable
                 if (LiquidUpdates.Count < 4096) LiquidUpdates.Add(((packed >> 16) & 65535, packed & 65535, packet[p + 4], packet[p + 5]));
                 else if (LiquidUpdatesDropped < int.MaxValue) LiquidUpdatesDropped++;
             }
+            return;
+        }
+        if (id == 82 && packet.Length == 25)
+        {
+            ushort module = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(packet.AsSpan(1, 2));
+            if (ParticleModules.Count < 4096) ParticleModules.Add((module, packet[3]));
             return;
         }
         using var reader = new BinaryReader(new MemoryStream(packet, 1, packet.Length - 1, false));
@@ -2220,6 +2299,17 @@ sealed class LabClient : IAsyncDisposable
             if (InventoryUpdates.Count < 10000)
             { InventoryUpdates.Add((player, slot, item, stack, prefix)); InventorySlotFlags[(player, slot)] = flags; }
             if (player == Slot) SscSlots.Add(slot);
+        }
+        if (id is 21 or 90 && packet.Length >= 25)
+        {
+            int item = reader.ReadInt16(); reader.ReadBytes(16); int stack = reader.ReadInt16();
+            reader.ReadByte(); reader.ReadByte(); int type = reader.ReadInt16();
+            if (WorldItemUpdates.Count < 10000) WorldItemUpdates.Add((id, item, stack, type));
+        }
+        if (id == 22 && packet.Length >= 4)
+        {
+            int item = reader.ReadInt16(), owner = reader.ReadByte();
+            if (ItemOwnerUpdates.Count < 10000) ItemOwnerUpdates.Add((item, owner));
         }
         if (id == 13 && packet.Length >= 15)
         {
@@ -2339,7 +2429,9 @@ sealed class LabClient : IAsyncDisposable
             y = x.Y.ToString("R", System.Globalization.CultureInfo.InvariantCulture) }),
         buffLists = BuffLists.Select(x => new { player = x.Player, types = x.Types }), chestSizes = ChestSizes.Select(x => new { chest = x.Chest, size = x.Size }),
         cameraControls = ControlUpdates.Where(x => x.CameraX is not null).Select(x => new { player = x.Player, cameraX = x.CameraX, cameraY = x.CameraY }),
-        vitals = VitalUpdates.Select(x => new { packet = x.Packet, player = x.Player, current = x.Current, maximum = x.Maximum }) };
+        vitals = VitalUpdates.Select(x => new { packet = x.Packet, player = x.Player, current = x.Current, maximum = x.Maximum }),
+        worldItemUpdates = WorldItemUpdates.Select(x => new { packet = x.Packet, item = x.Item, stack = x.Stack, type = x.Type }),
+        itemOwnerUpdates = ItemOwnerUpdates.Select(x => new { item = x.Item, owner = x.Owner }) };
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return; _disposed = true;

@@ -72,6 +72,24 @@ public sealed class M3WorldInputTests
     }
 
     [Test]
+    public void TerraAngelSignExploitLengthHasNoStringBodyAndIsRejectedBeforeNativeRead()
+    {
+        // The locked TerraAngel source writes the 7-bit value 60000 followed by
+        // one byte, not 60000 UTF-8 bytes. This is a complete 10-byte payload,
+        // but it is not a complete MessageBuffer sign frame.
+        byte[] bytes = new byte[10];
+        BinaryPrimitives.WriteInt16LittleEndian(bytes, 3);
+        BinaryPrimitives.WriteInt16LittleEndian(bytes.AsSpan(2), 10);
+        BinaryPrimitives.WriteInt16LittleEndian(bytes.AsSpan(4), 20);
+        bytes[6] = 0xE0; bytes[7] = 0xD4; bytes[8] = 0x03; bytes[9] = 7;
+
+        Assert.That(M3WorldPacketReader.ReadPayload(PacketTypes.SignNew, bytes).Kind,
+            Is.EqualTo(PacketReadKind.Malformed));
+        Assert.That(M3WorldPacketReader.ReadPayload(PacketTypes.SignNew, bytes.Concat(new byte[] { 1, 2 }).ToArray()).Kind,
+            Is.EqualTo(PacketReadKind.Malformed));
+    }
+
+    [Test]
     public void DisplayReleasePassesWithoutInventingIdentityViolationOrWorldLookup()
     {
         var release = new M3WorldPacket(WorldActionKind.DisplayEntityInteraction, 0, 0, -1, Sender: 99);

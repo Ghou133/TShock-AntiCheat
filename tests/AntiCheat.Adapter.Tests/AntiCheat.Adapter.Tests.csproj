@@ -3,14 +3,16 @@
     <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable><IsTestProject>true</IsTestProject>
     <TShockBaselineRoot Condition="'$(TShockBaselineRoot)' == ''">$(MSBuildThisFileDirectory)..\..\.lab\runtime-m12-r2\win-x64-framework-dependent</TShockBaselineRoot>
+    <!-- The compatibility sources are a read-only external compile input. -->
+    <TShockCompatibilityRoot Condition="'$(TShockCompatibilityRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\TShock\compatibility-1.4.5.8-20260910</TShockCompatibilityRoot>
     <OtApiPackageVersion Condition="'$(OtApiPackageVersion)' == ''">3.3.14</OtApiPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\tools\AntiCheat.GameplayScaffold\M6RuntimeDiagnostics.cs" Link="M6RuntimeDiagnostics.cs" />
     <Compile Include="..\..\tools\AntiCheat.GameplayScaffold\M11LiquidStepTrace.cs" Link="M11LiquidStepTrace.cs" />
     <Compile Include="..\..\tools\AntiCheat.NetworkLab\M7TransportDiagnostics.cs" Link="M7TransportDiagnostics.cs" />
-    <Compile Include="..\..\..\TShock\compatibility-1.4.5.8-20260910\src\TerrariaServerAPI\TerrariaServerAPI\TerrariaApi.Server\Hooking\NativeDiagnosticSocketPatch.cs" Link="NativeDiagnosticSocketPatch.cs" />
-    <Compile Include="..\..\..\TShock\compatibility-1.4.5.8-20260910\src\TerrariaServerAPI\TerrariaServerAPI\TerrariaApi.Server\Hooking\NativeLiquidSyncPatch.cs" Link="NativeLiquidSyncPatch.cs" />
+    <Compile Include="$(TShockCompatibilityRoot)\src\TerrariaServerAPI\TerrariaServerAPI\TerrariaApi.Server\Hooking\NativeDiagnosticSocketPatch.cs" Link="NativeDiagnosticSocketPatch.cs" />
+    <Compile Include="$(TShockCompatibilityRoot)\src\TerrariaServerAPI\TerrariaServerAPI\TerrariaApi.Server\Hooking\NativeLiquidSyncPatch.cs" Link="NativeLiquidSyncPatch.cs" />
     <None Include="..\..\data\progression\candidates.json" Link="data\progression\candidates.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\data\progression\mklp-operations.json" Link="data\progression\mklp-operations.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="..\..\src\AntiCheat.Plugin.TShock\AntiCheat.Plugin.TShock.csproj" />

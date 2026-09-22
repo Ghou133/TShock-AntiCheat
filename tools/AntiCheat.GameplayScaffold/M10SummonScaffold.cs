@@ -31,6 +31,7 @@ public sealed partial class GameplayScaffold
             m10SummonActors.Add(actor.Index, new(actor));
         }
         ServerApi.Hooks.NetGetData.Register(this, ObserveM10SummonRaw, -1001);
+        OTAPI.Hooks.MessageBuffer.GetData += ObserveM10SummonNativeCancellation;
         HookEvents.Terraria.NetMessage.SendData += ObserveM10SummonSend;
         Record("m10-summon-witness-prepared", new { actors = names, fixtureArtificial = false,
             source = "passive current-account raw27/29 and native SendData witness; no gameplay mutation" });
@@ -79,6 +80,17 @@ public sealed partial class GameplayScaffold
         if (args.msgType == 27) witness.Send27++; else witness.Send29++;
     }
 
+    private void ObserveM10SummonNativeCancellation(object? sender, OTAPI.Hooks.MessageBuffer.GetDataEventArgs args)
+    {
+        if (args.Result != OTAPI.HookResult.Cancel || args.Instance.readBuffer is not { Length: >= 24 } buffer ||
+            buffer[0] != 27 || !m10SummonActors.TryGetValue(args.Instance.whoAmI, out var witness) ||
+            !ReferenceEquals(TShock.Players[args.Instance.whoAmI], witness.Actor)) return;
+        uint bits = BinaryPrimitives.ReadUInt32LittleEndian(buffer.AsSpan(1, 4));
+        witness.LastRaw = new { packet = 27, key = bits, handled = true, witness.RawRequests,
+            type = (int)BinaryPrimitives.ReadInt16LittleEndian(buffer.AsSpan(21, 2)),
+            source = "native OTAPI MessageBuffer.GetData cancellation before native consumer" };
+    }
+
     private void WriteM10SummonState()
     {
         var plugin = M5Plugin();
@@ -121,6 +133,7 @@ public sealed partial class GameplayScaffold
     private void DisposeM10Summon()
     {
         ServerApi.Hooks.NetGetData.Deregister(this, ObserveM10SummonRaw);
+        OTAPI.Hooks.MessageBuffer.GetData -= ObserveM10SummonNativeCancellation;
         HookEvents.Terraria.NetMessage.SendData -= ObserveM10SummonSend;
         m10SummonActors.Clear();
     }

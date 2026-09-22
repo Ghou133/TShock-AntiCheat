@@ -16,7 +16,9 @@ internal sealed record M4ObservedReplayHarness(
     Func<bool> RuntimeVerified,
     Action<bool, string> Assert,
     Action<string, long, string> RecordProvenAccount,
-    Func<string, IPAddress, Task<LabClient>>? ConnectFrom = null);
+    Func<string, IPAddress, Task<LabClient>>? ConnectFrom = null,
+    Func<string, string?, Task<LabClient>>? ConnectWithIdentity = null,
+    Func<Task>? RestartServer = null);
 
 internal static class M4ObservedToolReplay
 {

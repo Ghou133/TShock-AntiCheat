@@ -106,7 +106,7 @@ public sealed partial class M7CombatNativeEvidenceTests
             Assert.That(changing.type, Is.EqualTo(308));
             Assert.That(M2ProjectileLookup.TryGet(new ProjectileKey(Actor, 200, 1), out var changed, out _), Is.True);
             Assert.That(changed, Is.SameAs(changing), "Actual same-object type conversion is a resource addition without a new allocation.");
-            cancelNew = true; Create(11, ControlAction.Unknown); cancelNew = false;
+            cancelNew = true; Create(11, ControlAction.Block); cancelNew = false;
             Assert.That(guard.SentryBudget.NativeCommits, Is.EqualTo(commits + 1));
             // Existing key updates do not reserve or commit another body.
             Create(200, ControlAction.Unknown); Assert.That(guard.SentryBudget.NativeCommits, Is.EqualTo(commits + 1));

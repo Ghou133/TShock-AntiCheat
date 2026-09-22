@@ -131,6 +131,47 @@ public sealed class M4VitalContextTests
     }
 
     [Test]
+    public void InitialSscExportBeforeFirstTickKeepsVitalsContextHealthy()
+    {
+        // Reproduce the connection/SSC ordering: the first native export can arrive
+        // immediately after Install and before the first GameUpdate/Tick.
+        contexts.Dispose();
+        HookEvents.Terraria.NetMessage.SendData -= Sink;
+        contexts = new M4VitalContexts("target326-vitals-test");
+        int faults = 0;
+        contexts.IntegrityFault = _ => faults++;
+        actor.ReceivedInfo = false;
+        contexts.Install(Lookup);
+        HookEvents.Terraria.NetMessage.SendData += Sink;
+
+        NetMessage.SendData(16, Slot, -1, null, Slot);
+        actor.ReceivedInfo = true;
+        var result = Evaluate(16, 500);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(faults, Is.Zero);
+            Assert.That(result.Facts["serverExportCount"], Is.EqualTo("1"));
+            Assert.That(result.Facts["historyFromConnectionStart"], Is.EqualTo("True"));
+        });
+    }
+
+    [Test]
+    public void OwnLifecycleSnapshotProvesInstallationAndOngoingTickAreSeparateFromJournal()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(contexts.Installed, Is.True);
+            Assert.That(contexts.Failed, Is.False);
+            Assert.That(contexts.InstallThreadId, Is.EqualTo(Environment.CurrentManagedThreadId));
+            Assert.That(contexts.LastTickThreadId, Is.EqualTo(Environment.CurrentManagedThreadId));
+            Assert.That(contexts.TickCount, Is.EqualTo(1));
+            Assert.That(contexts.CurrentThreadMatchesUpdateThread, Is.True);
+            Assert.That(contexts.HurtPluginObservationHealthy, Is.True);
+        });
+    }
+
+    [Test]
     public void ServerAcceptedValueAndRelayToPeersCannotAuthorizeSender()
     {
         actor.TPlayer.statLifeMax = 3000;

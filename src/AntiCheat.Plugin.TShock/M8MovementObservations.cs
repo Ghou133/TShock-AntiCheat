@@ -176,7 +176,6 @@ public sealed class M8MovementObservations(TimeProvider clock, string fingerprin
 
     private void OnSendPlayerHurt(object? sender, HookEvents.Terraria.NetMessage.SendPlayerHurtEventArgs args)
     {
-        if (!args.ContinueExecution) return;
         Safe(() =>
         {
             if (!TryNoticeState(args.playerTargetIndex, out var state)) return;

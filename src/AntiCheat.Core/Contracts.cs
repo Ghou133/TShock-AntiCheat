@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 namespace AntiCheat.Core;
 
 public enum ExecutionScope { ObserveOnly, TestLab, Production }
+public enum M18CandidateMode { Auto, Disabled, TestLabCandidate, ProductionCandidate }
 public enum RuleQualification { Unqualified, TestLab, ProductionQualified }
 public enum ControlAction { Pass, Unknown, Block }
 public enum Verdict { Pass, Unknown, UnsafeInput, ResourceAbuse, ProvenCheat, Fault }

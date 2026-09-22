@@ -12,7 +12,8 @@ public sealed record VersionedItemCatalog(string RuntimeFingerprint, string Data
     int ItemIdExclusiveMax, int PrefixExclusiveMax, ImmutableDictionary<int, ItemTypeDefinition> Definitions,
     bool IdDomainComplete);
 public sealed record ItemRuleContext(RuleInputContext Input, int SlotCount, bool InitialSynchronization,
-    bool TypeZeroIsClear, bool ZeroStackIsClear, bool AuthorizedItemMutation = false);
+    bool TypeZeroIsClear, bool ZeroStackIsClear, bool AuthorizedItemMutation = false,
+    bool RejectImpossibleStructure = false, bool FirstSanctionCandidate = false);
 
 /// <summary>
 /// Independent predicates informed by target GetDataHandlers.HandlePlayerSlot/HandleChestItem and
@@ -46,9 +47,23 @@ public static class InventoryRules
         if (context.AuthorizedItemMutation) return RuleResults.Pass(RuleId, "scoped-authorized-item-mutation", facts);
         if (item.Stack <= 0 || item.Stack > definition.MaxStack)
         {
+            var maximumFacts = facts.Add("maximumStack",
+                definition.MaxStack.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            // This is deliberately narrower than the ordinary structural stop. The adapter may
+            // set the candidate bit only for an authenticated packet21 new-item allocation
+            // sentinel after the versioned item definition and legal-exception boundary are closed.
+            // Zero-stack clears, packet90 updates, initial sync and authorized mutations never
+            // reach this first-sanction path.
+            if (context.FirstSanctionCandidate && context.RejectImpossibleStructure &&
+                item.Location == ItemLocation.WorldDrop && item.Stack > definition.MaxStack &&
+                !context.InitialSynchronization && !context.AuthorizedItemMutation && context.Input.Complete)
+                return RuleResults.Candidate(RuleId, "world-drop-stack-impossible-first-sanction-candidate", context.Input,
+                    maximumFacts.Add("firstSanctionCandidate", "true").Add("candidateScope", "packet21-new-world-item"));
+            if (context.RejectImpossibleStructure)
+                return RuleResults.Block(RuleId, "world-drop-stack-outside-item-definition", maximumFacts);
             if (context.InitialSynchronization) return RuleResults.Unknown(RuleId, "initial-sync-item-state-not-attributed", facts);
             return RuleResults.Candidate(RuleId, "stack-outside-item-definition", context.Input,
-                facts.Add("maximumStack", definition.MaxStack.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                maximumFacts);
         }
         if (!definition.PrefixRulesComplete) return RuleResults.Unknown(RuleId, "prefix-combination-table-incomplete", facts);
         if (!definition.AllowedPrefixes.Contains(item.Prefix))

@@ -12,6 +12,37 @@ using ServerTShock = TShockAPI.TShock;
 
 namespace AntiCheat.Plugin.TShock;
 
+/// <summary>Exact protocol-326 packet21/90/151 fields captured before the native
+/// item handler. This is a bounded diagnostic witness for real client runs,
+/// not an authorization or sanction by itself.</summary>
+public readonly record struct M18GroundItemPacketTrace(
+    SessionKey Session,
+    long AccountId,
+    byte PacketId,
+    int TargetSlot,
+    int Stack,
+    int Prefix,
+    int Type,
+    float RequestX,
+    float RequestY,
+    float VelocityX,
+    float VelocityY,
+    byte Flags,
+    int PayloadLength,
+    bool TargetExists,
+    bool TargetActive,
+    int ServerTargetType,
+    int ServerTargetStack,
+    bool TargetBeingGrabbed,
+    bool AlreadyCancelled,
+    bool AttributionComplete)
+{
+    public bool RequestCoordinatesComplete { get; init; } = true;
+    public float ActorX { get; init; }
+    public float ActorY { get; init; }
+    public bool ActorPositionSnapshotComplete { get; init; }
+}
+
 /// <summary>Constructs small immutable inputs from the locked runtime; no world or inventory writes.</summary>
 public sealed class M2BusinessAdapter
 {
@@ -45,10 +76,28 @@ public sealed class M2BusinessAdapter
     private int capturedWorldId;
     private long observedWorldEpoch = -1;
     private int observedWorldId;
+    private readonly M18WorldEditQueue worldEditQueue;
+    private readonly M18ParticleQueue particleQueue;
+    private readonly M18ImportantItemQueue importantItemQueue;
+    private readonly M18GroundItemClearQueue groundItemClearQueue;
+    private readonly M18WorldItemGenerationTracker groundItemGenerations = new();
+    private readonly bool enablePermanentSanctionCandidates;
 
-    public M2BusinessAdapter(string fingerprint, string dataDirectory)
+    public M2BusinessAdapter(string fingerprint, string dataDirectory,
+        M18WorldEditQueueOptions? worldEditQueueOptions = null,
+        M18ParticleQueueOptions? particleQueueOptions = null,
+        M18ImportantItemQueueOptions? importantItemQueueOptions = null,
+        IReadOnlyDictionary<int, string>? importantItemDefinitions = null,
+        M18GroundItemClearQueueOptions? groundItemClearQueueOptions = null,
+        bool enablePermanentSanctionCandidates = false)
     {
         this.fingerprint = fingerprint;
+        this.enablePermanentSanctionCandidates = enablePermanentSanctionCandidates;
+        worldEditQueue = new(worldEditQueueOptions ?? M18WorldEditQueueOptions.Disabled);
+        particleQueue = new(particleQueueOptions ?? M18ParticleQueueOptions.Disabled);
+        importantItemQueue = new(importantItemQueueOptions ?? M18ImportantItemQueueOptions.Disabled,
+            importantItemDefinitions ?? ImmutableDictionary<int, string>.Empty);
+        groundItemClearQueue = new(groundItemClearQueueOptions ?? M18GroundItemClearQueueOptions.Disabled);
         var itemFile = Path.Combine(dataDirectory, "candidates.json");
         var entityFile = Path.Combine(dataDirectory, "entity-candidates.json");
         itemProgression = File.Exists(itemFile) ? ProgressionCatalog.Load(itemFile).Rules : [];
@@ -71,8 +120,15 @@ public sealed class M2BusinessAdapter
     public bool ItemTableReady => items is not null;
     public bool BuffTableReady => buffs is not null;
     public bool ProjectileTableReady => projectileCatalog is not null;
+    public bool WorldEditQueueEnabled => worldEditQueue.Enabled;
+    public bool ParticleQueueEnabled => particleQueue.Enabled;
+    public bool ImportantItemQueueEnabled => importantItemQueue.Enabled;
+    public bool GroundItemClearQueueEnabled => groundItemClearQueue.Enabled;
     public M3InventoryContexts? InventoryContexts { get; set; }
     public Action<string, Exception>? IntegrityFault { get; set; }
+    public Action<M18ImportantItemObservation, M18ImportantItemQueueDecision>? ImportantItemObservationRecorded { get; set; }
+    public Action<M18GroundItemPacketTrace>? GroundItemPacketObserved { get; set; }
+    public Action<M18GroundItemPacketTrace, BusinessRuleResult>? GroundItemDecisionObserved { get; set; }
 
     // One bit per fixed producer bounds both retries and health reports. A producer fault is never
     // a player observation; independently sourced rules continue in this same update or packet.
@@ -95,6 +151,11 @@ public sealed class M2BusinessAdapter
 
     public void ResetWorld()
     {
+        worldEditQueue.Reset();
+        particleQueue.Reset();
+        importantItemQueue.Reset();
+        groundItemClearQueue.Reset();
+        groundItemGenerations.Reset();
         Run(Producer.Inventory, () => InventoryContexts?.ResetWorld());
         Run(Producer.ProjectileOwnership, () => { pendingProjectiles.Clear(); ownedProjectiles.Clear(); });
         worldFacts = ImmutableDictionary<string, JsonElement>.Empty;
@@ -103,6 +164,46 @@ public sealed class M2BusinessAdapter
         worldCaptured = default;
         worldStableTicks = 0;
         worldRevision++;
+    }
+
+    public void Forget(SessionKey session)
+    {
+        worldEditQueue.Forget(session);
+        particleQueue.Forget(session);
+        importantItemQueue.Forget(session);
+        groundItemClearQueue.Forget(session);
+    }
+
+    public BusinessRuleResult? EvaluateParticle(M18ParticlePacket packet, SessionKey session,
+        TSPlayer actor, bool alreadyCancelled)
+    {
+        if (alreadyCancelled || packet.ParticleType != M18ParticleQueue.StormLightningType)
+            return null;
+
+        // The transport/session binding is the ownership authority. The
+        // InvokingPlayer byte is a payload claim that must be recorded
+        // separately; it must never debit a claimed third-party player.
+        bool attributed = actor.IsLoggedIn && actor.Account is not null && actor.Account.ID > 0 &&
+            actor.Index == session.Slot;
+        bool payloadIdentityMatches = packet.InvokingPlayer == session.Slot;
+        var decision = particleQueue.Observe(tick, new(
+            session,
+            attributed ? actor.Account!.ID : 0,
+            packet.ParticleType,
+            packet.InvokingPlayer,
+            float.IsFinite(packet.PositionX) && float.IsFinite(packet.PositionY),
+            float.IsFinite(packet.MovementX) && float.IsFinite(packet.MovementY),
+            ParseComplete: true,
+            ClientOrigin: true,
+            BeforeSideEffects: true,
+            AttributionComplete: attributed)
+        {
+            PayloadIdentityMatchesSession = payloadIdentityMatches,
+        });
+        return decision.IsResourceBlock
+            ? M18ParticleQueueRules.ResourceBlock(Input(session, true, false),
+                ImmutableDictionary<string, string>.Empty, decision)
+            : null;
     }
 
     public void Update(Func<int, SessionSnapshot?> sessionAtSlot, long worldEpoch)
@@ -115,6 +216,10 @@ public sealed class M2BusinessAdapter
             observedWorldEpoch = worldEpoch;
             observedWorldId = Main.worldID;
         }
+        // ResetWorld deliberately clears the sequence tracker. Re-bind it to the
+        // current Core world epoch before the next packet arrives; otherwise the
+        // tracker would safely discard every packet13/packet21 pair as stale.
+        groundItemClearQueue.AdvanceWorld(worldEpoch);
         tick++;
         Run(Producer.Inventory, () => InventoryContexts?.Update());
         // Static version tables are finite and immutable after construction; no per-packet item creation.
@@ -209,6 +314,8 @@ public sealed class M2BusinessAdapter
         if (packet.Kind == M2PacketKind.PlayerSlot && body[0] == session.Slot)
         {
             int slot = M2PacketReader.Int16(body, 1), stack = M2PacketReader.Int16(body, 3), type = M2PacketReader.Int16(body, 6);
+            var importantResult = ObserveImportantItem(packet, session, actor, alreadyCancelled);
+            if (importantResult is not null) results.Add(importantResult);
             Run(Producer.ItemTable, () =>
             {
                 if (items is not null)
@@ -227,6 +334,8 @@ public sealed class M2BusinessAdapter
         else if (packet.Kind == M2PacketKind.ChestItem)
         {
             int id = M2PacketReader.Int16(body, 0), slot = body[2];
+            var importantResult = ObserveImportantItem(packet, session, actor, alreadyCancelled);
+            if (importantResult is not null) results.Add(importantResult);
             Run(Producer.Inventory, () => { if (InventoryContexts is not null) results.Add(InventoryContexts.EvaluateContainerWrite(session, actor, id, slot)); });
             Run(Producer.ItemTable, () =>
             {
@@ -235,6 +344,126 @@ public sealed class M2BusinessAdapter
                     results.Add(InventoryRules.Evaluate(new(M2PacketReader.Int16(body, 6), M2PacketReader.Int16(body, 3), body[5], slot, ItemLocation.Container),
                         new(Input(session, true, false), chest.maxItems, false, true, false), items));
             });
+        }
+        else if (packet.Kind == M2PacketKind.WorldItemDrop)
+        {
+            int id = M2PacketReader.Int16(body, 0);
+            int stack = M2PacketReader.Int16(body, 18);
+            int prefix = body[20];
+            int type = M2PacketReader.Int16(body, 22);
+            bool attributed = actor.IsLoggedIn && actor.Account is not null && actor.Account.ID > 0 &&
+                actor.Index == session.Slot;
+            var traceItem = id >= 0 && id < Main.maxItems && id < Main.item.Length ? Main.item[id] : null;
+            var trace = new M18GroundItemPacketTrace(
+                session,
+                attributed ? actor.Account!.ID : 0,
+                packet.MessageId,
+                id,
+                stack,
+                prefix,
+                type,
+                M2PacketReader.Single(body, 2),
+                M2PacketReader.Single(body, 6),
+                M2PacketReader.Single(body, 10),
+                M2PacketReader.Single(body, 14),
+                body[21],
+                body.Length,
+                traceItem is not null,
+                traceItem?.active == true,
+                traceItem?.type ?? 0,
+                traceItem?.stack ?? 0,
+                traceItem?.beingGrabbed == true,
+                alreadyCancelled,
+                attributed)
+            {
+                ActorX = actor.TPlayer.position.X,
+                ActorY = actor.TPlayer.position.Y,
+                ActorPositionSnapshotComplete = float.IsFinite(actor.TPlayer.position.X) &&
+                    float.IsFinite(actor.TPlayer.position.Y),
+            };
+            try
+            {
+                GroundItemPacketObserved?.Invoke(trace);
+            }
+            catch { /* Bounded packet diagnostics cannot affect native admission. */ }
+            var clearResult = ObserveGroundItemClear(packet, session, actor, alreadyCancelled,
+                id, stack, type, M2PacketReader.Single(body, 2), M2PacketReader.Single(body, 6));
+            if (clearResult is not null)
+            {
+                results.Add(clearResult);
+                try { GroundItemDecisionObserved?.Invoke(trace, clearResult); }
+                catch { /* Post-native state correlation is diagnostic only. */ }
+            }
+            var importantResult = ObserveImportantItem(packet, session, actor, alreadyCancelled);
+            if (importantResult is not null) results.Add(importantResult);
+            Run(Producer.ItemTable, () =>
+            {
+                // ItemDrop permits id == Main.maxItems as the native "allocate a new
+                // world item" sentinel. A type-zero clear, however, must address an
+                // existing array entry before Bouncer reads Main.item[id].
+                if (items is not null && Main.maxItems > 0 && Main.maxItems <= 4096)
+                {
+                    int slotCount = type == 0 ? Main.maxItems : Main.maxItems + 1;
+                    bool firstSanctionCandidate = enablePermanentSanctionCandidates &&
+                        packet.MessageId == (byte)PacketTypes.ItemDrop && id == Main.maxItems &&
+                        actor.Index == session.Slot && actor.IsLoggedIn && actor.Account is { ID: > 0 } &&
+                        type != 0 && stack > 0;
+                    results.Add(InventoryRules.Evaluate(new(type, stack, prefix, id, ItemLocation.WorldDrop),
+                        new(Input(session, true, firstSanctionCandidate), slotCount, false, true, false,
+                            RejectImpossibleStructure: true, FirstSanctionCandidate: firstSanctionCandidate), items));
+                }
+            });
+        }
+        else if (packet.Kind == M2PacketKind.WorldItemDespawn)
+        {
+            int id = M2PacketReader.Int16(body, 0);
+            bool attributed = actor.IsLoggedIn && actor.Account is not null && actor.Account.ID > 0 &&
+                actor.Index == session.Slot;
+            var traceItem = id >= 0 && id < Main.maxItems && id < Main.item.Length ? Main.item[id] : null;
+            var trace = new M18GroundItemPacketTrace(
+                session,
+                attributed ? actor.Account!.ID : 0,
+                packet.MessageId,
+                id,
+                0,
+                0,
+                0,
+                float.NaN,
+                float.NaN,
+                0f,
+                0f,
+                0,
+                body.Length,
+                traceItem is not null,
+                traceItem?.active == true,
+                traceItem?.type ?? 0,
+                traceItem?.stack ?? 0,
+                traceItem?.beingGrabbed == true,
+                alreadyCancelled,
+                attributed)
+            {
+                // SyncItemDespawn (#151) is an item-slot-only body. Do
+                // not substitute the server item's position for a client
+                // coordinate that was never on the wire.
+                RequestCoordinatesComplete = false,
+                ActorX = actor.TPlayer.position.X,
+                ActorY = actor.TPlayer.position.Y,
+                ActorPositionSnapshotComplete = float.IsFinite(actor.TPlayer.position.X) &&
+                    float.IsFinite(actor.TPlayer.position.Y),
+            };
+            try
+            {
+                GroundItemPacketObserved?.Invoke(trace);
+            }
+            catch { /* Bounded packet diagnostics cannot affect native admission. */ }
+            var clearResult = ObserveGroundItemDespawn(packet, session, actor, alreadyCancelled,
+                id, traceItem);
+            if (clearResult is not null)
+            {
+                results.Add(clearResult);
+                try { GroundItemDecisionObserved?.Invoke(trace, clearResult); }
+                catch { /* Post-native state correlation is diagnostic only. */ }
+            }
         }
         else if (packet.Kind is M2PacketKind.ProjectileNew or M2PacketKind.ProjectileDestroy)
         {
@@ -330,8 +559,24 @@ public sealed class M2BusinessAdapter
                         new(fingerprint, "healing-cause-unverified", false, session, targetKey, 0, false)));
             });
         }
+        else if (packet.Kind is M2PacketKind.Tile or M2PacketKind.Liquid)
+        {
+            var queueDecision = ObserveWorldEdit(packet, session, actor, alreadyCancelled);
+            if (queueDecision.IsResourceBlock)
+                results.Add(M18WorldEditQueueRules.ResourceBlock(Input(session, true, false),
+                    ImmutableDictionary<string, string>.Empty, queueDecision));
+
+            if (packet.Kind == M2PacketKind.Tile && body[0] is 1 or 3 or 21 or 22)
+            {
+                bool wall = body[0] is 3 or 22;
+                AddProgression(results, session, actor, wall ? ProgressionSubjectKind.Wall : ProgressionSubjectKind.Tile,
+                    M2PacketReader.Int16(body, 5), wall ? ProgressionActionKind.PlaceWall : ProgressionActionKind.PlaceTile,
+                    wall ? null : body[7], false);
+            }
+        }
         else if (packet.Kind == M2PacketKind.PlayerUpdate)
         {
+            Run(Producer.PlayerControls, () => ObserveGroundPlayerControls(packet, session, actor, alreadyCancelled));
             if (!float.IsFinite(M2PacketReader.Single(body, 6)) || !float.IsFinite(M2PacketReader.Single(body, 10)))
                 results.Add(Safety("A05.PlayerNumeric", "nonfinite-player-position"));
             Run(Producer.PlayerControls, () =>
@@ -341,14 +586,252 @@ public sealed class M2BusinessAdapter
                         ProgressionActionKind.UseItem, null, actor.IgnoreSSCPackets);
             });
         }
-        else if (packet.Kind == M2PacketKind.Tile && body[0] is 1 or 3 or 21 or 22)
-        {
-            bool wall = body[0] is 3 or 22;
-            AddProgression(results, session, actor, wall ? ProgressionSubjectKind.Wall : ProgressionSubjectKind.Tile,
-                M2PacketReader.Int16(body, 5), wall ? ProgressionActionKind.PlaceWall : ProgressionActionKind.PlaceTile,
-                wall ? null : body[7], false);
-        }
         return results;
+    }
+
+    private M18WorldEditQueueDecision ObserveWorldEdit(M2Packet packet, SessionKey session,
+        TSPlayer actor, bool alreadyCancelled)
+    {
+        if (alreadyCancelled)
+            return M18WorldEditQueueDecision.Disabled;
+
+        bool attributed = actor.IsLoggedIn && actor.Account is not null &&
+            actor.Index == session.Slot;
+        long accountId = attributed ? actor.Account!.ID : 0;
+        if (packet.Kind == M2PacketKind.Tile)
+        {
+            int operation = packet.Payload[0];
+            return worldEditQueue.Observe(tick, new(session, accountId,
+                M18WorldEditKind.Tile,
+                M2PacketReader.Int16(packet.Payload, 1),
+                M2PacketReader.Int16(packet.Payload, 3),
+                operation,
+                M2PacketReader.Int16(packet.Payload, 5),
+                0,
+                operation is 21 or 22 ? 2 : 1,
+                ParseComplete: true,
+                ClientOrigin: true,
+                BeforeSideEffects: true,
+                AttributionComplete: attributed));
+        }
+
+        return worldEditQueue.Observe(tick, new(session, accountId,
+            M18WorldEditKind.Liquid,
+            M2PacketReader.Int16(packet.Payload, 0),
+            M2PacketReader.Int16(packet.Payload, 2),
+            Operation: 0,
+            Data: packet.Payload[5],
+            Amount: packet.Payload[4],
+            WorkUnits: 1,
+            ParseComplete: true,
+            ClientOrigin: true,
+            BeforeSideEffects: true,
+            AttributionComplete: attributed));
+    }
+
+    private BusinessRuleResult? ObserveImportantItem(M2Packet packet, SessionKey session,
+        TSPlayer actor, bool alreadyCancelled)
+    {
+        if (alreadyCancelled) return null;
+        bool sessionComplete = actor.IsLoggedIn && actor.Account is not null &&
+            actor.Account.ID > 0 && actor.Index == session.Slot;
+        M18ImportantItemObservation observation;
+        if (packet.Kind == M2PacketKind.PlayerSlot)
+        {
+            observation = new(session, sessionComplete ? actor.Account!.ID : 0,
+                M18ImportantItemSource.Inventory,
+                M2PacketReader.Int16(packet.Payload, 1),
+                M2PacketReader.Int16(packet.Payload, 6),
+                M2PacketReader.Int16(packet.Payload, 3),
+                sessionComplete,
+                SourceContextKnown: false,
+                SourceAttributionComplete: false,
+                InitialSynchronization: !actor.HasSentInventory || actor.IgnoreSSCPackets,
+                ParseComplete: true,
+                ClientOrigin: true,
+                BeforeSideEffects: true);
+        }
+        else if (packet.Kind == M2PacketKind.ChestItem)
+        {
+            observation = new(session, sessionComplete ? actor.Account!.ID : 0,
+                M18ImportantItemSource.Container,
+                packet.Payload[2],
+                M2PacketReader.Int16(packet.Payload, 6),
+                M2PacketReader.Int16(packet.Payload, 3),
+                sessionComplete,
+                SourceContextKnown: false,
+                SourceAttributionComplete: false,
+                InitialSynchronization: false,
+                ParseComplete: true,
+                ClientOrigin: true,
+                BeforeSideEffects: true);
+        }
+        else
+        {
+            observation = new(session, sessionComplete ? actor.Account!.ID : 0,
+                M18ImportantItemSource.WorldDrop,
+                M2PacketReader.Int16(packet.Payload, 0),
+                M2PacketReader.Int16(packet.Payload, 22),
+                M2PacketReader.Int16(packet.Payload, 18),
+                sessionComplete,
+                SourceContextKnown: false,
+                SourceAttributionComplete: false,
+                InitialSynchronization: false,
+                ParseComplete: true,
+                ClientOrigin: true,
+                BeforeSideEffects: true);
+        }
+        var decision = importantItemQueue.Observe(tick, observation);
+        try { ImportantItemObservationRecorded?.Invoke(observation, decision); }
+        catch { /* Durable observation is optional and cannot affect packet handling. */ }
+        return decision.Important
+            ? M18ImportantItemQueueRules.Observe(Input(session, true, false), decision)
+            : null;
+    }
+
+    private BusinessRuleResult? ObserveGroundItemClear(M2Packet packet, SessionKey session,
+        TSPlayer actor, bool alreadyCancelled, int id, int stack, int type, float requestX, float requestY)
+    {
+        // Packet90 is a live-item update, and packet21 with a non-zero type is
+        // a new-item allocation. TerraAngel's WipeGroundItems request is
+        // packet151 with an existing slot; packet21 type-zero remains an
+        // alternate shape for clients that do not rewrite TurnToAir().
+        if (alreadyCancelled || packet.MessageId != (byte)PacketTypes.ItemDrop || stack != 0 || type != 0)
+            return null;
+
+        bool attributed = actor.IsLoggedIn && actor.Account is not null && actor.Account.ID > 0 &&
+            actor.Index == session.Slot;
+        var worldItem = id >= 0 && id < Main.maxItems && id < Main.item.Length ? Main.item[id] : null;
+        bool snapshotComplete = worldItem is not null && worldItem.active && worldItem.type > 0 &&
+            worldItem.stack > 0 && !worldItem.beingGrabbed;
+        int targetGeneration = snapshotComplete ? groundItemGenerations.Observe(id, worldItem!) : 0;
+        bool requestFinite = float.IsFinite(requestX) && float.IsFinite(requestY);
+        bool normalPickupShape = snapshotComplete && requestFinite &&
+            MathF.Abs(requestX - worldItem!.position.X) <= 64f &&
+            MathF.Abs(requestY - worldItem.position.Y) <= 64f;
+        var decision = groundItemClearQueue.Observe(tick, new(
+            session,
+            attributed ? actor.Account!.ID : 0,
+            id,
+            targetGeneration,
+            snapshotComplete ? worldItem!.type : 0,
+            snapshotComplete ? worldItem!.stack : 0,
+            snapshotComplete ? worldItem!.position.X : 0f,
+            snapshotComplete ? worldItem!.position.Y : 0f,
+            requestX,
+            requestY,
+            snapshotComplete,
+            worldItem?.active == true,
+            worldItem?.beingGrabbed == true,
+            normalPickupShape,
+            ParseComplete: requestFinite,
+            ClientOrigin: true,
+            BeforeSideEffects: true,
+            AttributionComplete: attributed)
+        {
+            PacketId = packet.MessageId,
+            AlreadyCancelled = alreadyCancelled,
+            ActorX = actor.TPlayer.position.X,
+            ActorY = actor.TPlayer.position.Y,
+            ActorPositionSnapshotComplete = float.IsFinite(actor.TPlayer.position.X) &&
+                float.IsFinite(actor.TPlayer.position.Y),
+        });
+        return M18GroundItemClearQueueRules.Observe(Input(session, true, false), decision);
+    }
+
+    private BusinessRuleResult? ObserveGroundItemDespawn(M2Packet packet, SessionKey session,
+        TSPlayer actor, bool alreadyCancelled, int id, WorldItem? traceItem)
+    {
+        if (alreadyCancelled || packet.MessageId != (byte)PacketTypes.SyncItemDespawn)
+            return null;
+
+        bool attributed = actor.IsLoggedIn && actor.Account is not null && actor.Account.ID > 0 &&
+            actor.Index == session.Slot;
+        bool snapshotComplete = traceItem is not null && traceItem.active && traceItem.type > 0 &&
+            traceItem.stack > 0 && !traceItem.beingGrabbed;
+        int targetGeneration = snapshotComplete ? groundItemGenerations.Observe(id, traceItem!) : 0;
+        float targetX = snapshotComplete ? traceItem!.position.X : 0f;
+        float targetY = snapshotComplete ? traceItem!.position.Y : 0f;
+        var decision = groundItemClearQueue.Observe(tick, new(
+            session,
+            attributed ? actor.Account!.ID : 0,
+            id,
+            targetGeneration,
+            snapshotComplete ? traceItem!.type : 0,
+            snapshotComplete ? traceItem!.stack : 0,
+            targetX,
+            targetY,
+            float.NaN,
+            float.NaN,
+            snapshotComplete,
+            traceItem?.active == true,
+            traceItem?.beingGrabbed == true,
+            NormalPickupShape: false,
+            ParseComplete: true,
+            ClientOrigin: true,
+            BeforeSideEffects: true,
+            AttributionComplete: attributed)
+        {
+            PacketId = packet.MessageId,
+            AlreadyCancelled = alreadyCancelled,
+            RequestCoordinatesComplete = false,
+            ActorX = actor.TPlayer.position.X,
+            ActorY = actor.TPlayer.position.Y,
+            ActorPositionSnapshotComplete = float.IsFinite(actor.TPlayer.position.X) &&
+                float.IsFinite(actor.TPlayer.position.Y),
+        });
+        return M18GroundItemClearQueueRules.Observe(Input(session, true, false), decision);
+    }
+
+    private void ObserveGroundPlayerControls(M2Packet packet, SessionKey session,
+        TSPlayer actor, bool alreadyCancelled)
+    {
+        if (packet.Payload.Length < 14 || packet.Payload[0] != session.Slot)
+            return;
+
+        bool attributed = actor.IsLoggedIn && actor.Account is not null &&
+            actor.Account.ID > 0 && actor.Index == session.Slot;
+        float x = M2PacketReader.Single(packet.Payload, 6);
+        float y = M2PacketReader.Single(packet.Payload, 10);
+        groundItemClearQueue.ObservePlayerControls(tick, new(
+            session,
+            attributed ? actor.Account!.ID : 0,
+            x,
+            y,
+            float.IsFinite(x) && float.IsFinite(y),
+            ParseComplete: true,
+            ClientOrigin: true,
+            BeforeSideEffects: true,
+            AttributionComplete: attributed,
+            AlreadyCancelled: alreadyCancelled));
+    }
+
+    private sealed class M18WorldItemGenerationTracker
+    {
+        private const int Capacity = 4096;
+        private readonly int[] fingerprints = new int[Capacity];
+        private readonly int[] generations = new int[Capacity];
+
+        public int Observe(int slot, WorldItem item)
+        {
+            if (slot is < 0 or >= Capacity)
+                return 0;
+
+            int fingerprint = HashCode.Combine(item.active, item.type, item.stack, item.prefix,
+                item.beingGrabbed, item.position.X, item.position.Y);
+            if (generations[slot] == 0 || fingerprints[slot] != fingerprint)
+            {
+                fingerprints[slot] = fingerprint;
+                generations[slot] = generations[slot] == int.MaxValue ? 1 : generations[slot] + 1;
+            }
+            return generations[slot];
+        }
+
+        public void Reset()
+        {
+            Array.Clear(fingerprints);
+            Array.Clear(generations);
+        }
     }
 
     private static BusinessRuleResult Safety(string id, string reason) => new(id, "m2.1", ControlAction.Block,

@@ -22,9 +22,10 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
     private long observationDropped;
     private long journalBytes;
     private bool journalLimitReported;
+    private readonly object journalSync = new();
     private int statusFiles;
     private PendingCancellation? forcedCancellation;
-    private int[] rawPacketIds = [16, 27, 28, 29, 42, 53, 55, 65, 96, 100, 117, 118, 153, 155];
+    private int[] rawPacketIds = [16, 27, 28, 29, 42, 47, 53, 55, 65, 96, 100, 117, 118, 153, 155];
     private readonly string session = DateTimeOffset.UtcNow.ToString("yyyyMMddTHHmmssfffZ");
     private readonly JsonSerializerOptions jsonOptions = new() { WriteIndented = true };
     private string? root;
@@ -52,7 +53,7 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
             "qa_m6_safety", "qa_m6_state", "qa_m6_remote_arrow", "qa_m7_materials", "qa_m7_pumps", "qa_m7_pump_state",
             "qa_m7_loadouts", "qa_m7_loadout_state", "qa_m7_npc_station", "qa_m8_liquid", "qa_m8_liquid_state",
             "qa_m9_application", "qa_m9_application_state", "qa_m9_craft", "qa_m9_craft_arm", "qa_m9_craft_state",
-            "qa_m9_paint", "qa_m9_paint_mode", "qa_m9_paint_state", "qa_m9_liquid", "qa_m9_liquid_state",
+            "qa_m9_paint", "qa_m9_paint_mode", "qa_m9_paint_state", "qa_m9_liquid", "qa_m9_liquid_state", "qa_m18_cell", "qa_m18_position_cell", "qa_m18_position_state", "qa_m18_materials", "qa_m18_tile_materials", "qa_m18_server_item", "qa_m18_wipe_items", "qa_m18_expert_mode", "qa_m18_reward_trace", "qa_m18_reward_state", "qa_m18_butcher_enum", "qa_m18_low_life", "qa_m18_wall_materials",
             "qa_m16_wall", "qa_m16_wall_mode", "qa_m16_wall_state",
             "qa_m16_egress", "qa_m16_egress_state", "qa_m16_timeouts", "qa_m17_work",
             "qa_m16_inventory_slots", "qa_m16_inventory_slots_state", "qa_m16_item_structure", "qa_m16_item_structure_state",
@@ -60,7 +61,7 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
             "qa_m9_teleport", "qa_m9_teleport_state", "qa_m10_rod", "qa_m10_quickstack", "qa_m10_quickstack_state",
             "qa_m10_summon", "qa_m10_summon_state", "qa_m10_summon_materials",
             "qa_m11_sentry_state", "qa_m11_sentry_materials",
-            "qa_m10_liquid_control", "qa_m10_liquid_control_state", "qa_m10_liquid_control_finish", "qa_m12_receive", "qa_m13_display", "qa_m14_object", "qa_m14l_placement", "qa_m14r_entity"
+            "qa_m10_liquid_control", "qa_m10_liquid_control_state", "qa_m10_liquid_control_finish", "qa_m12_receive", "qa_m13_display", "qa_m14_object", "qa_m14l_placement", "qa_m14r_entity", "qa_m18_lock_health"
         })
         {
             var commandName = name;
@@ -75,10 +76,14 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
         ServerApi.Hooks.GameUpdate.Register(this, OnUpdate);
         ServerApi.Hooks.GamePostUpdate.Register(this, OnPostUpdate);
         ServerApi.Hooks.NetGetData.Register(this, OnRawData, 2000);
+        ServerApi.Hooks.NetGetData.Register(this, OnPostAntiCheatData, 500);
+        HookEvents.Terraria.NPC.StrikeNPC += ObserveM18NativeStrike;
         // Official idle-server callback runs in the same main loop when Game.Update is paused.
         Main.OnTickForThirdPartySoftwareOnly += OnIdleTick;
-        GetDataHandlers.PlayerSlot.Register(OnPlayerSlot, HandlerPriority.Lowest, true);
-        GetDataHandlers.TileEdit.Register(OnTileEdit, HandlerPriority.Lowest, true);
+            GetDataHandlers.PlayerSlot.Register(OnPlayerSlot, HandlerPriority.Lowest, true);
+        GetDataHandlers.ItemDrop.Register(OnItemDrop, HandlerPriority.Lowest, true);
+            GetDataHandlers.TileEdit.Register(OnTileEdit, HandlerPriority.Lowest, true);
+        GetDataHandlers.LiquidSet.Register(OnLiquidSet, HandlerPriority.Lowest, true);
         GetDataHandlers.ChestOpen.Register(OnChestOpen, HandlerPriority.Lowest, true);
         GetDataHandlers.ChestItemChange.Register(OnChestItem, HandlerPriority.Lowest, true);
         PlayerHooks.PlayerPermission += OnPermission;
@@ -102,6 +107,7 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
             DisposeM16TimeoutFixture();
             DisposeM17CommandWork();
             DisposeM18Storage();
+            DisposeM18RewardTrace();
             DisposeM16InventorySlot();
             DisposeM16ItemStructure();
             DisposeM17ProgressionWorld();
@@ -120,8 +126,11 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
             ServerApi.Hooks.GameUpdate.Deregister(this, OnUpdate);
             ServerApi.Hooks.GamePostUpdate.Deregister(this, OnPostUpdate);
             ServerApi.Hooks.NetGetData.Deregister(this, OnRawData);
+            ServerApi.Hooks.NetGetData.Deregister(this, OnPostAntiCheatData);
+            HookEvents.Terraria.NPC.StrikeNPC -= ObserveM18NativeStrike;
             Main.OnTickForThirdPartySoftwareOnly -= OnIdleTick;
             GetDataHandlers.PlayerSlot.UnRegister(OnPlayerSlot);
+            GetDataHandlers.ItemDrop.UnRegister(OnItemDrop);
             GetDataHandlers.TileEdit.UnRegister(OnTileEdit);
             GetDataHandlers.ChestOpen.UnRegister(OnChestOpen);
             GetDataHandlers.ChestItemChange.UnRegister(OnChestItem);
@@ -179,6 +188,7 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
                     case "qa_m14_object": M14ObjectCommand(request.Arguments); break;
                     case "qa_m14l_placement": M14LObjectPlacementCommand(request.Arguments); break;
                     case "qa_m14r_entity": M14ResumeTileEntityPlacementCommand(request.Arguments); break;
+                    case "qa_m18_lock_health": M18LockHealthCommand(request.Arguments); break;
                     case "qa_m12_receive": M12ReceiveCommand(request.Arguments); break;
                     case "qa_m9_application": PrepareApplicationWitness(request.Arguments); break;
                     case "qa_m9_application_state": WriteApplicationState(); break;
@@ -207,6 +217,19 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
                     case "qa_m17_sort_policy": SetM17ContainerSortPolicy(request.Arguments); break;
                     case "qa_m9_liquid": PrepareM9LiquidFacility(request.Arguments); break;
                     case "qa_m9_liquid_state": WriteM9LiquidFacilityState(); break;
+                    case "qa_m18_cell": M18WorldCellCommand(request.Arguments); break;
+                    case "qa_m18_position_cell": M18WorldPositionCellCommand(request.Arguments); break;
+                    case "qa_m18_position_state": M18WorldPositionStateCommand(request.Arguments); break;
+                    case "qa_m18_materials": M18WorldMaterialsCommand(request.Arguments); break;
+                    case "qa_m18_tile_materials": M18WorldTileMaterialsCommand(request.Arguments); break;
+                    case "qa_m18_server_item": M18ServerItemCommand(request.Arguments); break;
+                    case "qa_m18_wipe_items": M18WipeItemsCommand(request.Arguments); break;
+                    case "qa_m18_expert_mode": M18ExpertModeCommand(request.Arguments); break;
+                    case "qa_m18_reward_trace": M18RewardTraceCommand(request.Arguments); break;
+                    case "qa_m18_reward_state": M18RewardStateCommand(request.Arguments); break;
+                    case "qa_m18_butcher_enum": M18ButcherEnumerationCommand(request.Arguments); break;
+                    case "qa_m18_low_life": M18LowLifeCommand(request.Arguments); break;
+                    case "qa_m18_wall_materials": M18WorldWallMaterialsCommand(request.Arguments); break;
                     case "qa_m9_teleport": PrepareTeleportWitness(request.Arguments); break;
                     case "qa_m10_rod": SetTeleportRodPermission(request.Arguments); break;
                     case "qa_m10_quickstack": PrepareM10QuickStack(request.Arguments); break;
@@ -495,7 +518,7 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
             for (int i = 0; i < arguments.Length; i++)
             {
                 Require(int.TryParse(arguments[i], out int packet) && packet is
-                    5 or 13 or 16 or 21 or 22 or 23 or 27 or 28 or 29 or 31 or 32 or 42 or 50 or 53 or 55 or 65 or 85 or 96 or 100 or 117 or 118 or 147 or 153 or 155,
+                    5 or 13 or 16 or 21 or 22 or 23 or 27 or 28 or 29 or 31 or 32 or 42 or 47 or 50 or 53 or 55 or 65 or 85 or 90 or 96 or 100 or 117 or 118 or 147 or 153 or 155,
                     "Only fixed experiment game packets may be captured; authentication/chat/text are excluded.");
                 next[i] = packet;
             }
@@ -555,13 +578,34 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
         }
     }
 
+    private void OnPostAntiCheatData(GetDataEventArgs args)
+    {
+        // The existing priority-2000 hook intentionally remains a pre-core
+        // observation for old cancellation fixtures. This second, narrow hook
+        // records only packet47 after AntiCheat's priority-1000 reader, so the
+        // live evidence can distinguish the two hook positions without changing
+        // either packet or Handled state.
+        if (!recording || (int)args.MsgID != (int)PacketTypes.SignNew || !args.Handled || args.Msg is null)
+            return;
+        int size = args.Length - 1;
+        byte[] buffer = args.Msg.readBuffer;
+        if (size >= 0 && size <= 512 && args.Index >= 0 && args.Index <= buffer.Length - size)
+            Observe("raw-client-post-anticheat-frame", new { packetId = (int)args.MsgID,
+                playerIndex = args.Msg.whoAmI, payloadBytes = size,
+                payloadHex = Convert.ToHexString(buffer.AsSpan(args.Index, size)),
+                handledObserved = args.Handled, hookPriority = 500 });
+    }
+
     private void Snapshot(string label, bool writeFile)
     {
         lastSnapshot = DateTimeOffset.UtcNow;
         var players = TShock.Players.Where(p => p != null && p.Active && p.RealPlayer).Select(p => new
         {
             p.Index, p.Name, p.IsLoggedIn, accountName = p.Account?.Name, group = p.Group?.Name,
-            tileX = p.TileX, tileY = p.TileY, health = p.TPlayer.statLife, dead = p.TPlayer.dead,
+            tileX = p.TileX, tileY = p.TileY,
+            position = new { x = p.TPlayer.position.X, y = p.TPlayer.position.Y },
+            size = new { width = p.TPlayer.width, height = p.TPlayer.height },
+            health = p.TPlayer.statLife, dead = p.TPlayer.dead,
             rawLifeMaximum = p.TPlayer.statLifeMax, effectiveLifeMaximum = p.TPlayer.statLifeMax2,
             mana = p.TPlayer.statMana, rawManaMaximum = p.TPlayer.statManaMax, effectiveManaMaximum = p.TPlayer.statManaMax2,
             p.ActiveChest, p.IsDisabledForSSC, p.IsDisabledPendingTrashRemoval,
@@ -572,12 +616,28 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
         var chest = room != null && room.ChestId >= 0 && room.ChestId < Main.chest.Length ? Main.chest[room.ChestId] : null;
         var payload = new
         {
-            label, Main.worldName, Main.worldID, worldPath = Main.worldPathName, ssc = Main.ServerSideCharacter,
+            label, Main.worldName, Main.worldID, maxWorldItems = Main.maxItems, worldPath = Main.worldPathName, ssc = Main.ServerSideCharacter,
             players, room,
+            worldItems = Main.item.Select((item, index) => new { index, item.active, item.type, item.stack,
+                item.beingGrabbed, item.playerIndexTheItemIsReservedFor, item.shimmerTime,
+                x = item.position.X, y = item.position.Y, vx = item.velocity.X, vy = item.velocity.Y })
+                .Where(item => item.active).Take(4096).ToArray(),
             npcs = Main.npc.Take(200).Select((npc, index) => new { index, type = npc?.type ?? 0,
-                active = npc?.active ?? false, life = npc?.life ?? 0, generation = npc?.generation ?? 0,
+                netId = npc?.netID ?? 0, boss = npc?.boss ?? false, spawnedFromStatue = npc?.SpawnedFromStatue ?? false,
+                interactionSlots = npc is null ? [] : Enumerable.Range(0, Math.Min(255, npc.playerInteraction.Length))
+                    .Where(slot => npc.playerInteraction[slot]).ToArray(),
+                active = npc?.active ?? false, life = npc?.life ?? 0, lifeMax = npc?.lifeMax ?? 0,
+                defense = npc?.defense ?? 0, friendly = npc?.friendly ?? false,
+                generation = npc?.generation ?? 0,
                 position = new { x = npc?.position.X ?? 0, y = npc?.position.Y ?? 0 },
                 velocity = new { x = npc?.velocity.X ?? 0, y = npc?.velocity.Y ?? 0 } }).ToArray(),
+            m18NativeStrikeObserver = new
+            {
+                armedTargets = m18NativeStrikeTargets.Order(StringComparer.Ordinal).ToArray(),
+                events = m18NativeStrikeEvents.ToArray(),
+                dropped = m18NativeStrikeEventsDropped,
+                note = "Passive StrikeNPC entry observer armed only by the read-only M18 Butcher enumeration; fromNet/owner are recorded to separate a blocked client packet from unrelated native AI changes."
+            },
             recordingHealth = new { queued = observationCount, dropped = observationDropped, journalBytes,
                 maximumJournalBytes = MaximumJournalBytes, maximumQueue = MaximumObservationQueue, journalLimitReported },
             chestPair = new { primary = room == null ? null : DescribeChest(room.ChestId), secondary = DescribeChest(secondaryChestId) },
@@ -599,7 +659,9 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
     }
 
     private void OnPlayerSlot(object? sender, GetDataHandlers.PlayerSlotEventArgs e) => Observe("player-slot-packet", new { playerIndex = e.Player.Index, playerName = e.Player.Name, e.Slot, e.Type, e.Stack, e.Prefix, e.Favorited, handledObserved = e.Handled });
+    private void OnItemDrop(object? sender, GetDataHandlers.ItemDropEventArgs e) => Observe("item-drop-packet", new { playerIndex = e.Player.Index, playerName = e.Player.Name, e.ID, e.Position, e.Velocity, e.Stacks, e.Prefix, e.NoDelay, e.Type, handledObserved = e.Handled });
     private void OnTileEdit(object? sender, GetDataHandlers.TileEditEventArgs e) => Observe("tile-edit-packet", new { playerIndex = e.Player.Index, playerName = e.Player.Name, e.X, e.Y, action = e.Action.ToString(), e.EditData, e.Style, handledObserved = e.Handled });
+    private void OnLiquidSet(object? sender, GetDataHandlers.LiquidSetEventArgs e) => Observe("liquid-set-packet", new { playerIndex = e.Player.Index, playerName = e.Player.Name, e.TileX, e.TileY, e.Amount, type = e.Type.ToString(), handledObserved = e.Handled });
     private void OnChestOpen(object? sender, GetDataHandlers.ChestOpenEventArgs e) => Observe("chest-open-packet", new { playerIndex = e.Player.Index, playerName = e.Player.Name, e.X, e.Y, handledObserved = e.Handled });
     private void OnChestItem(object? sender, GetDataHandlers.ChestItemEventArgs e) => Observe("chest-item-packet", new { playerIndex = e.Player.Index, playerName = e.Player.Name, e.ID, e.Slot, e.Type, e.Stacks, e.Prefix, handledObserved = e.Handled });
     private void OnPermission(PlayerPermissionEventArgs e)
@@ -619,24 +681,27 @@ public sealed partial class GameplayScaffold : TerrariaPlugin
         }
         observations.Enqueue(new { utc = DateTimeOffset.UtcNow, kind, payload });
     }
-    private void Record(string kind, object payload) => Append(new { utc = DateTimeOffset.UtcNow, sequence = ++sequence, kind, mainThreadId = Environment.CurrentManagedThreadId, payload });
+    private void Record(string kind, object payload) => Append(new { utc = DateTimeOffset.UtcNow, sequence = Interlocked.Increment(ref sequence), kind, mainThreadId = Environment.CurrentManagedThreadId, payload });
     private void Append(object entry)
     {
         string line = JsonSerializer.Serialize(entry) + Environment.NewLine;
         int bytes = System.Text.Encoding.UTF8.GetByteCount(line);
-        if (journalBytes > MaximumJournalBytes - bytes)
+        lock (journalSync)
         {
-            recording = false;
-            Interlocked.Increment(ref observationDropped);
-            if (!journalLimitReported)
+            if (journalBytes > MaximumJournalBytes - bytes)
             {
-                journalLimitReported = true;
-                TSPlayer.Server.SendWarningMessage("QA evidence journal reached its 64 MiB session limit. Recording stopped; qa_status still writes a bounded latest snapshot. Gameplay is unaffected.");
+                recording = false;
+                Interlocked.Increment(ref observationDropped);
+                if (!journalLimitReported)
+                {
+                    journalLimitReported = true;
+                    TSPlayer.Server.SendWarningMessage("QA evidence journal reached its 64 MiB session limit. Recording stopped; qa_status still writes a bounded latest snapshot. Gameplay is unaffected.");
+                }
+                return;
             }
-            return;
+            File.AppendAllText(journal!, line);
+            journalBytes += bytes;
         }
-        File.AppendAllText(journal!, line);
-        journalBytes += bytes;
     }
 
     private static bool IsUnder(string path, string parent)

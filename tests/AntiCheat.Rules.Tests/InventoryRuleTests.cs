@@ -54,4 +54,24 @@ public sealed class InventoryRuleTests
         BlockOnly(InventoryRules.Evaluate(Item with { NetId = itemId, Prefix = prefix }, Context, Catalog));
     [Test] public void InitialPrefixSnapshotCannotProvePlayerCreatedIt() =>
         Unknown(InventoryRules.Evaluate(Item with { Prefix = 2 }, Context with { InitialSynchronization = true }, Catalog));
+
+    [Test]
+    public void WorldDropUsesDefinitionMaximumAndTreatsImpossibleStackAsSafePreWriteBlock()
+    {
+        var context = Context with { SlotCount = 401, RejectImpossibleStructure = true };
+        Pass(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 9999 }, context, Catalog));
+        BlockOnly(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 10000 }, context, Catalog));
+        BlockOnly(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 0 }, context, Catalog));
+    }
+
+    [Test]
+    public void ExplicitWorldDropSanctionCandidateKeepsLegalMaximumAndIncompleteProofNonSanctionable()
+    {
+        var context = Context with { SlotCount = 401, RejectImpossibleStructure = true, FirstSanctionCandidate = true };
+        Candidate(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 10000 }, context, Catalog));
+        Pass(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 9999 }, context, Catalog));
+        BlockOnly(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 0 }, context, Catalog));
+        BlockOnly(InventoryRules.Evaluate(Item with { Location = ItemLocation.WorldDrop, Slot = 400, Stack = 10000 },
+            context with { Input = Input with { ExceptionsExcluded = false } }, Catalog));
+    }
 }

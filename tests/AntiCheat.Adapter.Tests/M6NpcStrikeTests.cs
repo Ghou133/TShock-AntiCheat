@@ -43,7 +43,7 @@ public sealed partial class M6NpcStrikeTests
         Main.player[Slot] = new Player { whoAmI = Slot, active = true };
         Main.combatText = Enumerable.Range(0, 100).Select(_ => new CombatText { active = true }).ToArray();
         Netplay.Clients[Slot] = new RemoteClient { State = 10 };
-        var actor = new TSPlayer(Slot) { IsLoggedIn = true, HasSentInventory = true,
+        var actor = new M18RootCapturingPlayer(Slot) { IsLoggedIn = true, HasSentInventory = true,
             Group = new Group("m6-strike-fixture"), Account = new UserAccount { ID = 6207, Name = "m6-strike-fixture" } };
         ServerTShock.Players[Slot] = actor;
         store = new Store();
@@ -84,9 +84,10 @@ public sealed partial class M6NpcStrikeTests
         sent.Add((args.msgType, args.number, args.number2, args.number3, args.number4, args.number5));
         args.ContinueExecution = false;
     }
-    private static byte[] Body(short damage = 9, float knockback = 0, byte direction = 2, byte critical = 0, byte generation = 3)
+    private static byte[] Body(short damage = 9, float knockback = 0, byte direction = 2, byte critical = 0,
+        byte generation = 3, byte target = NpcSlot)
     {
-        byte[] body = new byte[10]; body[0] = NpcSlot; body[1] = generation;
+        byte[] body = new byte[10]; body[0] = target; body[1] = generation;
         BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(2), damage);
         BinaryPrimitives.WriteSingleLittleEndian(body.AsSpan(4), knockback); body[8] = direction; body[9] = critical;
         return body;
@@ -162,6 +163,118 @@ public sealed partial class M6NpcStrikeTests
         Assert.That(M6NpcStrikeReader.Read(M2ContractsTests.Packet((PacketTypes)28, Body(), Slot), false).Kind,
             Is.EqualTo(PacketReadKind.UnknownRuntime));
         Assert.That(Root(new byte[9]).Handled, Is.True);
+    }
+
+    [Test]
+    public void TestLabQueueCancelsNpc28BeforeReceiverWithoutCreatingSanction()
+    {
+        var queueOptions = new M18NpcStrikeQueueOptions
+        {
+            Enabled = true,
+            WindowTicks = 3,
+            LowDamageMaximum = 1,
+            PerTargetLowDamageLimit = 2,
+            PerSessionLowDamageLimit = 4,
+            LowDamageRingCapacity = 4,
+            HighSampleCapacity = 2,
+        };
+        using var causes = new M7NpcStrikeCauseContexts(TargetRuntime.Fingerprint, queueOptions);
+        causes.Install(); causes.Tick(session.WorldEpoch);
+        typeof(AntiCheatPlugin).GetField("_npcStrikeCauses", Private)!.SetValue(plugin, causes);
+        try
+        {
+            Assert.That(Root(Body(1000)).Handled, Is.False, "High damage remains record-only but consumes a bounded positive-damage unit.");
+            Assert.That(Root(Body(1)).Handled, Is.True, "A high positive-damage unit plus one low unit reaches the target budget.");
+            Assert.That(Root(Body(1)).Handled, Is.True, "The candidate budget must keep cancellation in the raw hook after the first block.");
+            Assert.That(engine.CanWrite(session), Is.True);
+            Assert.That(engine.SanctionCount, Is.Zero);
+            Assert.That(causes.CaptureClientStrike(session), Is.Null, "A blocked current request must not leave a stale M8 sample.");
+
+            causes.Forget(session);
+            Assert.That(Root(Body(1)).Handled, Is.False, "Exact-session forget starts a fresh candidate window.");
+        }
+        finally
+        {
+            typeof(AntiCheatPlugin).GetField("_npcStrikeCauses", Private)!.SetValue(plugin, null);
+        }
+    }
+
+    [TestCase(float.NaN)]
+    [TestCase(float.PositiveInfinity)]
+    public void QueueEnabledPreservesStructuralRejectionAndOldGenerationNoop(float knockback)
+    {
+        var queueOptions = new M18NpcStrikeQueueOptions
+        {
+            Enabled = true,
+            WindowTicks = 3,
+            LowDamageMaximum = 1,
+            PerTargetLowDamageLimit = 4,
+            PerSessionLowDamageLimit = 8,
+            LowDamageRingCapacity = 8,
+            HighSampleCapacity = 2,
+        };
+        using var causes = new M7NpcStrikeCauseContexts(TargetRuntime.Fingerprint, queueOptions);
+        causes.Install();
+        causes.Tick(session.WorldEpoch);
+        typeof(AntiCheatPlugin).GetField("_npcStrikeCauses", Private)!.SetValue(plugin, causes);
+        try
+        {
+            Assert.That(Root(Body(knockback: knockback)).Handled, Is.True,
+                "The queue's record-only result must not downgrade M6's numeric BLOCK.");
+            Assert.That(Root(Body(knockback: 1, direction: 255)).Handled, Is.True,
+                "The queue's record-only result must not downgrade M6's direction BLOCK.");
+
+            var stale = Body(1000, float.NaN, 255, 255, generation: 2);
+            Assert.That(Root(stale).Handled, Is.False,
+                "The old-generation path remains the native no-op rather than a queue block.");
+            Receive(stale);
+            Assert.That(Target.life, Is.EqualTo(5000));
+            Assert.That(engine.CanWrite(session), Is.True);
+            Assert.That(engine.SanctionCount, Is.Zero);
+        }
+        finally
+        {
+            typeof(AntiCheatPlugin).GetField("_npcStrikeCauses", Private)!.SetValue(plugin, null);
+        }
+    }
+
+    [Test]
+    public void RejectedOutOfRangeRequestClearsPendingTransactionBeforeLaterNativeEvent()
+    {
+        var queueOptions = new M18NpcStrikeQueueOptions
+        {
+            Enabled = true,
+            WindowTicks = 3,
+            LowDamageMaximum = 1,
+            PerTargetLowDamageLimit = 4,
+            PerSessionLowDamageLimit = 8,
+            LowDamageRingCapacity = 8,
+            HighSampleCapacity = 2,
+        };
+        using var causes = new M7NpcStrikeCauseContexts(TargetRuntime.Fingerprint, queueOptions);
+        causes.Install();
+        causes.Tick(session.WorldEpoch);
+        typeof(AntiCheatPlugin).GetField("_npcStrikeCauses", Private)!.SetValue(plugin, causes);
+        try
+        {
+            Assert.That(Root(Body()).Handled, Is.False);
+            var transactions = (Array)typeof(M7NpcStrikeCauseContexts)
+                .GetField("strikeTransactions", Private)!.GetValue(causes)!;
+            Assert.That(transactions.GetValue(Slot), Is.Not.Null,
+                "The accepted request must have a pending same-tick transaction before native delivery.");
+
+            Assert.That(Root(Body(target: (byte)Main.maxNPCs)).Handled, Is.True,
+                "The structural out-of-range rejection must cancel before native dispatch.");
+            Assert.That(transactions.GetValue(Slot), Is.Null);
+
+            Target.StrikeNPC(9, 0, 1, false, true, Slot, Main.player[Slot]);
+            Assert.That(causes.CaptureClientStrike(session), Is.Null,
+                "A later native call must not consume the rejected request's old transaction.");
+        }
+        finally
+        {
+            typeof(AntiCheatPlugin).GetField("_npcStrikeCauses", Private)!.SetValue(plugin, null);
+        }
     }
 
     private sealed class Store : IEnforcementJournal, IAccountBanStore, IRunSafetyGuard

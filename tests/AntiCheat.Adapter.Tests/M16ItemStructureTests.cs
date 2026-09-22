@@ -210,6 +210,64 @@ public sealed class M16ItemStructureTests
         Assert.That(zero.Native.IsAir, Is.True);
     }
 
+    [TestCase(PacketTypes.ItemDrop)]
+    [TestCase(PacketTypes.UpdateItemDrop)]
+    public void WorldDropUsesActualMaxStackAndKeepsNewItemSentinelBounded(PacketTypes packet)
+    {
+        var catalog = GetCatalog()!;
+        int fullStackType = catalog.Definitions.First(x => x.Key > 0 && x.Value.MaxStack == 9999).Key;
+        var legal = DispatchWorld(packet, (short)Main.maxItems, (short)fullStackType, 9999, 0, 12);
+        Assert.That(legal.Action, Is.EqualTo(ControlAction.Pass));
+
+        var impossible = DispatchWorld(packet, (short)Main.maxItems, (short)ItemID.WoodenSword, short.MaxValue, 0, 0);
+        Assert.That(impossible.Action, Is.EqualTo(ControlAction.Block),
+            impossible.Reason + " facts=" + string.Join(",", impossible.Facts.Select(x => x.Key + "=" + x.Value)));
+        Assert.That(impossible.Verdict, Is.EqualTo(Verdict.UnsafeInput));
+        Assert.That(impossible.Reason, Is.EqualTo("world-drop-stack-outside-item-definition"));
+
+        var clear = DispatchWorld(packet, 0, 0, -1, byte.MaxValue, 0);
+        Assert.That(clear.Action, Is.EqualTo(ControlAction.Pass));
+    }
+
+    [Test]
+    public void ExplicitWorldDropSanctionCandidateIsOnlyAuthenticatedNewPacket21OverMax()
+    {
+        var previous = business;
+        var candidate = new M2BusinessAdapter(TargetRuntime.Fingerprint,
+            Path.Combine(Path.GetTempPath(), "absent-m16-c01-candidate-data"),
+            enablePermanentSanctionCandidates: true);
+        for (int index = 0; index < (ItemID.Count + 48) / 128 + 2; index++) candidate.Update(_ => null, 1);
+        business = candidate;
+        try
+        {
+            const short dirtBlock = 2;
+            var legal = DispatchWorld(PacketTypes.ItemDrop, (short)Main.maxItems, dirtBlock, 9999, 0, 0);
+            Assert.That(legal.Action, Is.EqualTo(ControlAction.Pass));
+
+            var candidateResult = DispatchWorld(PacketTypes.ItemDrop, (short)Main.maxItems, dirtBlock, 10000, 0, 0);
+            Assert.That(candidateResult.Action, Is.EqualTo(ControlAction.Block));
+            Assert.That(candidateResult.Verdict, Is.EqualTo(Verdict.ProvenCheat));
+            Assert.That(candidateResult.PredicateSatisfied, Is.True);
+            Assert.That(candidateResult.PrerequisitesComplete, Is.True);
+            Assert.That(candidateResult.Reason, Is.EqualTo("world-drop-stack-impossible-first-sanction-candidate"));
+
+            var updateResult = DispatchWorld(PacketTypes.UpdateItemDrop, (short)Main.maxItems, dirtBlock, 10000, 0, 0);
+            Assert.That(updateResult.Action, Is.EqualTo(ControlAction.Block));
+            Assert.That(updateResult.Verdict, Is.EqualTo(Verdict.UnsafeInput));
+            Assert.That(updateResult.PredicateSatisfied, Is.False);
+
+            actor.IsLoggedIn = false;
+            var missingIdentity = DispatchWorld(PacketTypes.ItemDrop, (short)Main.maxItems, dirtBlock, 10000, 0, 0);
+            Assert.That(missingIdentity.Verdict, Is.Not.EqualTo(Verdict.ProvenCheat));
+            Assert.That(missingIdentity.PredicateSatisfied, Is.False);
+            actor.IsLoggedIn = true;
+        }
+        finally
+        {
+            business = previous;
+        }
+    }
+
     private Item Current(int packet, int slot) => packet == 5 ? new PlayerItemSlotID.SlotReference(actor.TPlayer, slot).Item : Main.chest[ChestId].item[slot];
     private sealed record Outcome(BusinessRuleResult Result, Item Native, int? FrameType, bool CoreEntered, bool NativeEntered);
     private Outcome Dispatch(int packet, short type, short stack, byte prefix, int slot = 10, byte flags = 0)
@@ -236,5 +294,25 @@ public sealed class M16ItemStructureTests
         // Packet5 and32 share the type offset: three-byte frame header + six-byte body prefix.
         int? serialized = frame is null ? null : BinaryPrimitives.ReadInt16LittleEndian(frame.AsSpan(9, 2));
         return new(result, Current(packet, slot), serialized, true, true);
+    }
+
+    private BusinessRuleResult DispatchWorld(PacketTypes packet, short id, short type, short stack, byte prefix, byte flags)
+    {
+        using var bodyStream = new MemoryStream();
+        using (var writer = new BinaryWriter(bodyStream, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(id); writer.Write(0f); writer.Write(0f); writer.Write(0f); writer.Write(0f);
+            writer.Write(stack); writer.Write(prefix); writer.Write(flags); writer.Write(type);
+            if ((flags & 4) != 0) { writer.Write(false); writer.Write(0f); }
+            if ((flags & 8) != 0) writer.Write((byte)0);
+        }
+        byte[] body = bodyStream.ToArray();
+        var args = new GetDataEventArgs { MsgID = packet, Index = 0, Length = body.Length + 1 };
+        typeof(GetDataEventArgs).GetProperty(nameof(GetDataEventArgs.Msg))!.SetValue(args,
+            new MessageBuffer { whoAmI = Actor, readBuffer = body });
+        var parsed = M2PacketReader.Read(args, true);
+        Assert.That(parsed.Kind, Is.EqualTo(PacketReadKind.Parsed));
+        return business.Evaluate(parsed.Packet!, session, actor, _ => (null, null), false)
+            .Single(x => x.RuleId == InventoryRules.RuleId);
     }
 }
