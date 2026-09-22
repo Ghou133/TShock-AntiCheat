@@ -14,6 +14,8 @@
     <PackageReference Include="NUnit" Version="4.3.2" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
     <ProjectReference Include="../../src/AntiCheat.Rules/AntiCheat.Rules.csproj" />
+    <!-- Test the actual configuration loader without requiring proprietary runtime assemblies. -->
+    <Compile Include="../../src/AntiCheat.Plugin.TShock/M2Configuration.cs" Link="Configuration/M2Configuration.cs" />
     <None Include="../../data/progression/candidates.json" Link="data/candidates.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../data/progression/entity-candidates.json" Link="data/entity-candidates.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

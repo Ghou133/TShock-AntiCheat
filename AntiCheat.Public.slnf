@@ -1,0 +1,17 @@
+{
+  "solution": {
+    "path": "AntiCheat.sln",
+    "projects": [
+      "src\\AntiCheat.Core\\AntiCheat.Core.csproj",
+      "src\\AntiCheat.Persistence\\AntiCheat.Persistence.csproj",
+      "src\\AntiCheat.Progression\\AntiCheat.Progression.csproj",
+      "src\\AntiCheat.Rules\\AntiCheat.Rules.csproj",
+      "tests\\AntiCheat.Core.Tests\\AntiCheat.Core.Tests.csproj",
+      "tests\\AntiCheat.Persistence.Tests\\AntiCheat.Persistence.Tests.csproj",
+      "tests\\AntiCheat.Progression.Tests\\AntiCheat.Progression.Tests.csproj",
+      "tests\\AntiCheat.Rules.Tests\\AntiCheat.Rules.Tests.csproj",
+      "tests\\AntiCheat.RuleExtraction.Tests\\AntiCheat.RuleExtraction.Tests.csproj",
+      "tools\\AntiCheat.RuleExtraction\\AntiCheat.RuleExtraction.csproj"
+    ]
+  }
+}
