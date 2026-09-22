@@ -34,6 +34,7 @@
 # The public entry is README.md. Historical reports remain in the local archive.
 /docs/*
 !/docs/m3-target-ledger.json
+!/docs/luna-m18-merge-review.md
 
 # Keep only the current scope handoff, not its older proposals.
 /anticheat-scope-handoff/*
