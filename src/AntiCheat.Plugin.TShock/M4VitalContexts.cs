@@ -29,7 +29,19 @@ public sealed class M4VitalContexts : IDisposable
     private bool installed, failed;
     private volatile bool hurtPluginObservationFailed;
     private int updateThread;
+    private int lastTickThread;
+    private long tickCount;
     public Action<Exception>? IntegrityFault { get; set; }
+
+    public bool Installed => installed;
+    public bool Failed => failed;
+    public int InstallThreadId => Volatile.Read(ref updateThread);
+    public int LastTickThreadId => Volatile.Read(ref lastTickThread);
+    public long TickCount => Volatile.Read(ref tickCount);
+    public bool CurrentThreadMatchesUpdateThread => installed && !failed &&
+        Environment.CurrentManagedThreadId == Volatile.Read(ref updateThread);
+    public bool HurtPluginObservationHealthy => !hurtPluginObservationFailed;
+    public Action<HookEvents.Terraria.NetMessage.SendDataEventArgs>? SendDataObserved { get; set; }
 
     public M4VitalContexts(string fingerprint) => this.fingerprint = fingerprint;
 
@@ -37,6 +49,11 @@ public sealed class M4VitalContexts : IDisposable
     public void Install(Func<int, (SessionSnapshot? Session, TSPlayer? Player)> lookup)
     {
         if (installed || failed) return;
+        // Initialize before the first hook can observe PlayerInfo/SSC exports.
+        // Without this, a legitimate export emitted during connection setup
+        // sees updateThread == 0 and disables the whole Vitals context before
+        // the first GameUpdate callback has a chance to bind it.
+        updateThread = Environment.CurrentManagedThreadId;
         targetAtSlot = lookup;
         HookEvents.Terraria.NetMessage.SendData += OnSendData;
         installed = true;
@@ -54,6 +71,8 @@ public sealed class M4VitalContexts : IDisposable
     {
         if (targetAtSlot is null) return;
         updateThread = Environment.CurrentManagedThreadId;
+        lastTickThread = updateThread;
+        Interlocked.Increment(ref tickCount);
         bool known = KnownPluginSet();
         for (int slot = 0; slot < states.Length; slot++)
         {
@@ -81,6 +100,7 @@ public sealed class M4VitalContexts : IDisposable
     private void OnSendData(object? sender, HookEvents.Terraria.NetMessage.SendDataEventArgs args)
     {
         if (failed || !installed || !args.ContinueExecution || Main.netMode != 2 || targetAtSlot is null) return;
+        try { SendDataObserved?.Invoke(args); } catch { /* diagnostics cannot affect native sends */ }
         // Observe every outgoing kind before the vital-export filter: a plugin can send
         // packet3 and unload between updates, leaving the client's assigned role changed.
         try

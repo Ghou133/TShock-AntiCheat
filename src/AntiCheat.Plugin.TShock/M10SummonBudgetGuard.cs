@@ -49,21 +49,30 @@ public sealed class M10SummonBudgetGuard : IDisposable
         public int Next, Entered = -1;
         public bool NativeEntry, Invalid;
     }
-    private sealed class RequestScope(M10SummonBudgetGuard owner, MessageBuffer buffer)
+    private sealed class RequestScope(M10SummonBudgetGuard owner, MessageBuffer buffer,
+        int start, int length, byte[] payload)
     {
         public readonly M10SummonBudgetGuard Owner = owner;
         public readonly MessageBuffer Buffer = buffer;
+        public readonly int Start = start;
+        public readonly int Length = length;
+        public readonly byte[] Payload = payload;
         public SessionKey? Session;
         public uint Key;
         public int Type;
         public bool Admitted;
+        public bool AlreadyCancelled;
         public Projectile? Allocation;
         public Projectile? ExistingSentryCandidate;
     }
+    private sealed record NativePreflight(M10SummonBudgetGuard Owner, RequestScope Request,
+        SessionKey Session, uint Key, int Type, bool AlreadyCancelled,
+        BusinessRuleResult Result);
     private sealed record EquipmentRequest(SessionKey Session, TSPlayer Actor, Player Player, int Slot,
         int Type, int Stack, int Prefix, bool Favorite, int Loadout);
     [ThreadStatic] private static PlayerScope? playerScope;
     [ThreadStatic] private static RequestScope? requestScope;
+    [ThreadStatic] private static NativePreflight? nativePreflight;
     private delegate void GetDataOriginal(MessageBuffer buffer, int start, int length, out int messageType);
     private delegate void GetDataHook(GetDataOriginal original, MessageBuffer buffer, int start, int length, out int messageType);
     private readonly Func<int, (SessionKey? Session, TSPlayer? Player, bool CanWrite)> current;
@@ -80,12 +89,15 @@ public sealed class M10SummonBudgetGuard : IDisposable
     private int thread, cursor;
     private long epoch = -1, tick;
     private bool failed, installed;
+    private bool nativeReceiveHookInstalled;
     private readonly bool isolatedLab;
     public bool Healthy => installed && !failed;
     public string? FailureType { get; private set; }
     public string? FailureReason { get; private set; }
     public long NativeCalculations { get; private set; }
     public long NativeCommits { get; private set; }
+    public long NativePreflightEvaluations { get; private set; }
+    public long NativePreflightCancellations { get; private set; }
     public Action<Exception>? IntegrityFault { get; set; }
 
     public M10SummonBudgetGuard(string fingerprint,
@@ -119,6 +131,8 @@ public sealed class M10SummonBudgetGuard : IDisposable
             var receive = typeof(MessageBuffer).GetMethod(nameof(MessageBuffer.GetData))!;
             hooks.Add(new ILHook(receive, InstrumentAllocation));
             hooks.Add(new Hook(receive, (GetDataHook)WithinRequest));
+            OTAPI.Hooks.MessageBuffer.GetData += OnNativeGetData;
+            nativeReceiveHookInstalled = true;
             installed = true;
         }
         catch (Exception error) { Fail(error); }
@@ -158,6 +172,43 @@ public sealed class M10SummonBudgetGuard : IDisposable
 
     public M11SentryState? CaptureSentry(int slot) => (uint)slot < sessions.Length ? SentryBudget.Capture(slot, current(slot).Session) : null;
 
+    /// <summary>Returns only the small native summon context needed by the
+    /// ordinary Butcher observer. The locked Slime Staff pair is the sole
+    /// mapping in this slice: projectile 266 is maintained by BuffID.BabySlime
+    /// (64). A buff without an observed body, or a body without that buff, is
+    /// never promoted to a match and never exempts the player from another
+    /// rule.</summary>
+    public M18NpcSummonAuxiliaryContext? CaptureNpcStrikeAuxiliary(SessionKey session)
+    {
+        if (!OnThread(session) || (uint)session.Slot >= capacities.Length)
+            return null;
+
+        var binding = current(session.Slot);
+        var capacity = capacities[session.Slot];
+        if (binding.Session != session || binding.Player is not { } actor ||
+            !binding.CanWrite || !actor.IsLoggedIn || actor.Account is null ||
+            !actor.HasSentInventory || actor.IgnoreSSCPackets ||
+            actor.TPlayer is not { } player || !player.active || player.dead ||
+            !ReferenceEquals(Main.player[session.Slot], player) ||
+            capacity?.Session != session || !SameInputs(capacity, player))
+            return null;
+
+        bool maintenanceBuff = HasActiveBuff(player, BuffID.BabySlime);
+        int observed = 0;
+        if (maintenanceBuff && entities[session.Slot] is { } list)
+        {
+            foreach (var entity in list)
+                if (entity.Session == session && entity.Type == Slime && SameActive(entity))
+                    observed = observed == int.MaxValue ? observed : observed + 1;
+        }
+
+        return new M18NpcSummonAuxiliaryContext(
+            SnapshotComplete: true,
+            MaintenanceBuffObserved: maintenanceBuff,
+            MatchingObservedEntity: observed > 0,
+            MatchingObservedEntityCount: observed);
+    }
+
     private void Bind(SessionKey session)
     {
         if (sessions[session.Slot] == session) return;
@@ -194,6 +245,24 @@ public sealed class M10SummonBudgetGuard : IDisposable
         uint bits = (uint)M2PacketReader.Int32(packet.Payload, 0);
         var key = (ProjectileKey)bits;
         int type = M2PacketReader.Int16(packet.Payload, 20);
+        if (nativePreflight is { } cached && cached.Owner == this &&
+            ReferenceEquals(cached.Request, requestScope) && cached.Session == session &&
+            cached.Key == bits && cached.Type == type &&
+            cached.AlreadyCancelled == alreadyCancelled &&
+            packet.Payload.AsSpan().SequenceEqual(cached.Request.Payload))
+        {
+            nativePreflight = null;
+            if (requestScope is { } cachedRequest && cachedRequest.Buffer.whoAmI == session.Slot)
+            {
+                cachedRequest.Session = session; cachedRequest.Key = bits; cachedRequest.Type = type;
+                cachedRequest.AlreadyCancelled = alreadyCancelled;
+                cachedRequest.Admitted = !alreadyCancelled && cached.Result.Action != ControlAction.Block;
+            }
+            return cached.Result;
+        }
+        // A later hook can change or cancel the selected frame. A preflight
+        // decision belongs only to the exact immutable request it inspected.
+        if (nativePreflight?.Owner == this) nativePreflight = null;
         bool keyFound = M2ProjectileLookup.TryGet(key, out var old, out bool complete);
         bool found = keyFound && old is { active: true };
         // Native27 can SetDefaults on an existing key whose type changes, creating a sentry body
@@ -269,15 +338,26 @@ public sealed class M10SummonBudgetGuard : IDisposable
         M2ProjectileLookup.TryGet((ProjectileKey)entry.Key, out var currentEntity, out bool complete) && complete &&
         ReferenceEquals(currentEntity, entity);
 
+    private static bool HasActiveBuff(Player player, int buffType)
+    {
+        for (int index = 0; index < player.buffType.Length; index++)
+            if (player.buffType[index] == buffType && player.buffTime[index] > 0)
+                return true;
+        return false;
+    }
+
     private void WithinRequest(GetDataOriginal original, MessageBuffer buffer, int start, int length, out int messageType)
     {
         EquipmentRequest? equipment = null;
         try { equipment = ObserveRequest(buffer, start, length); }
         catch (Exception error) { Fail(error); }
         var previous = requestScope;
-        var scope = Healthy && thread == Environment.CurrentManagedThreadId && Main.netMode == 2 &&
-            start >= 0 && length >= 24 && start <= buffer.readBuffer.Length - length && buffer.readBuffer[start] == 27
-            ? new RequestScope(this, buffer) : null;
+        byte[]? requestPayload = null;
+        bool validProjectile = start >= 0 && length > 1 && start <= buffer.readBuffer.Length - length &&
+            buffer.readBuffer[start] == 27 &&
+            M2PacketReader.TryReadProjectilePayload(buffer.readBuffer.AsSpan(start + 1, length - 1), out requestPayload);
+        var scope = Healthy && thread == Environment.CurrentManagedThreadId && Main.netMode == 2 && validProjectile
+            ? new RequestScope(this, buffer, start, length, requestPayload!) : null;
         requestScope = scope;
         try
         {
@@ -292,8 +372,52 @@ public sealed class M10SummonBudgetGuard : IDisposable
             // Observation errors remain isolated; the original native exception still propagates.
             try { CompleteSentryRequest(scope); }
             catch (Exception error) { Fail(error); }
+            if (nativePreflight is { Owner: var owner } && owner == this) nativePreflight = null;
             requestScope = previous;
         }
+    }
+
+    private void OnNativeGetData(object? sender, OTAPI.Hooks.MessageBuffer.GetDataEventArgs args)
+    {
+        if (!Healthy || Main.netMode != 2 || thread != Environment.CurrentManagedThreadId ||
+            args.Instance is not { } instance || instance.readBuffer is not { } buffer) return;
+        var request = requestScope;
+        if (request is null || request.Owner != this || !ReferenceEquals(request.Buffer, instance)) return;
+        if (args.Result == OTAPI.HookResult.Cancel)
+        {
+            request.AlreadyCancelled = true;
+            request.Admitted = false;
+            return;
+        }
+        // An earlier OTAPI hook may retarget the native request. Preflight is
+        // valid only for the exact start/length and packet kind captured by
+        // the outer immutable GetData scope.
+        if (args.Start != request.Start || args.Length != request.Length || args.PacketId != 27 ||
+            request.Start < 0 || request.Length <= 1 || request.Start > buffer.Length - request.Length ||
+            buffer[request.Start] != 27 ||
+            !M2PacketReader.TryReadProjectilePayload(buffer.AsSpan(request.Start + 1, request.Length - 1), out var payload) ||
+            !payload.AsSpan().SequenceEqual(request.Payload)) return;
+        int slot = args.Instance.whoAmI;
+        if ((uint)slot >= sessions.Length) return;
+        var binding = current(slot);
+        if (binding.Session is not { } session || binding.Player is not { } actor || !OnThread(session)) return;
+        int type = M2PacketReader.Int16(payload, 20);
+        if (type != M11SentryBudgetGuard.Hydra) return;
+        uint bits = (uint)M2PacketReader.Int32(payload, 0);
+        try
+        {
+            var result = Evaluate(new(M2PacketKind.ProjectileNew, payload),
+                session, actor, alreadyCancelled: request.AlreadyCancelled);
+            if (result is null) return;
+            nativePreflight = new(this, request, session, bits, type, request.AlreadyCancelled, result);
+            if (NativePreflightEvaluations < long.MaxValue) NativePreflightEvaluations++;
+            if (result.Action == ControlAction.Block)
+            {
+                if (NativePreflightCancellations < long.MaxValue) NativePreflightCancellations++;
+                args.Result = OTAPI.HookResult.Cancel;
+            }
+        }
+        catch (Exception error) { Fail(error); }
     }
 
     private EquipmentRequest? ObserveRequest(MessageBuffer buffer, int start, int length)
@@ -542,6 +666,11 @@ public sealed class M10SummonBudgetGuard : IDisposable
     public void Dispose()
     {
         installed = false;
+        if (nativeReceiveHookInstalled)
+        {
+            OTAPI.Hooks.MessageBuffer.GetData -= OnNativeGetData;
+            nativeReceiveHookInstalled = false;
+        }
         for (int index = hooks.Count - 1; index >= 0; index--) hooks[index].Dispose();
         hooks.Clear(); ResetWorld();
     }

@@ -1,10 +1,18 @@
 using System.Reflection;
+using System.Buffers.Binary;
 using System.Net;
 using System.Runtime.InteropServices;
 using AntiCheat.Core;
 using AntiCheat.Plugin.TShock;
+using AntiCheat.Rules;
+using Microsoft.Xna.Framework;
 using NUnit.Framework;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.ID;
 using TerrariaApi.Server;
+using TShockAPI;
+using TShockAPI.DB;
 
 namespace AntiCheat.Adapter.Tests;
 
@@ -29,6 +37,156 @@ public sealed class M2ContractsTests
         packet = Packet(type, new byte[size + 1]);
         Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed));
         Assert.That(M2PacketReader.Read(packet, false).Kind, Is.EqualTo(PacketReadKind.UnknownRuntime));
+    }
+
+    [TestCase(PacketTypes.ItemDrop)]
+    [TestCase(PacketTypes.UpdateItemDrop)]
+    public void WorldItemDropFramesFollowTargetConditionalFlags(PacketTypes type)
+    {
+        foreach (byte flags in new byte[] { 0, 4, 8, 12, 0xF0 })
+        {
+            int size = 24 + ((flags & 4) != 0 ? 5 : 0) + ((flags & 8) != 0 ? 1 : 0);
+            var body = new byte[size]; body[21] = flags;
+            var packet = Packet(type, body);
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Parsed), $"flags={flags}");
+            packet.Length--;
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed), $"truncated flags={flags}");
+            packet = Packet(type, [.. body, 0]);
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed), $"trailing flags={flags}");
+        }
+    }
+
+    [Test]
+    public void SyncItemDespawnFrameIsExactlyTheTwoByteItemIndex()
+    {
+        var packet = Packet(PacketTypes.SyncItemDespawn, new byte[2]);
+        Assert.Multiple(() =>
+        {
+            Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Parsed));
+            Assert.That(M2PacketReader.Read(packet, false).Kind, Is.EqualTo(PacketReadKind.UnknownRuntime));
+        });
+        packet.Length--;
+        Assert.That(M2PacketReader.Read(packet, true).Kind, Is.EqualTo(PacketReadKind.Malformed));
+        Assert.That(M2PacketReader.Read(Packet(PacketTypes.SyncItemDespawn, new byte[3]), true).Kind,
+            Is.EqualTo(PacketReadKind.Malformed));
+    }
+
+    [Test]
+    public void ThreeOrdinaryPacket151PickupsStayNativePassWithoutAccountSanction()
+    {
+        WithGroundItemRuntime((adapter, actor, session) =>
+        {
+            for (short slot = 1; slot <= 3; slot++)
+            {
+                Main.item[slot] = GroundItem(slot, 5, new Vector2(100, 100));
+                var result = Despawn(adapter, actor, session, slot);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(result.Action, Is.EqualTo(ControlAction.Pass));
+                    Assert.That(result.Verdict, Is.EqualTo(Verdict.Pass));
+                    Assert.That(result.PredicateSatisfied, Is.False);
+                    Assert.That(result.Facts["requestCoordinates"], Is.EqualTo("unavailable(packet151-body-id-only)"));
+                });
+            }
+            actor.TPlayer.position = new Vector2(5000, 5000);
+            var remote = Despawn(adapter, actor, session, 3);
+            Assert.That(remote.Action, Is.EqualTo(ControlAction.Unknown),
+                "Server-side item and actor positions may be stale; a remote snapshot alone cannot block pickup.");
+            Assert.That(remote.PredicateSatisfied, Is.False);
+
+            Main.player[session.Slot] = null!;
+            var missingActor = Despawn(adapter, actor, session, 3);
+            Assert.That(missingActor.Action, Is.EqualTo(ControlAction.Unknown),
+                "A missing current player cannot supply accepted position or account proof.");
+            Assert.That(missingActor.PredicateSatisfied, Is.False);
+        });
+    }
+
+    [Test]
+    public void GroundItemGenerationDoesNotChangeForStackOrMovementOfSameSlotObject()
+    {
+        WithGroundItemRuntime((adapter, actor, session) =>
+        {
+            const short slot = 4;
+            var item = GroundItem(slot, 5, new Vector2(100, 100));
+            Main.item[slot] = item;
+            string first = Despawn(adapter, actor, session, slot).Facts["targetGeneration"];
+            item.stack = 4;
+            item.position = new Vector2(104, 100);
+            string updated = Despawn(adapter, actor, session, slot).Facts["targetGeneration"];
+            Assert.That(updated, Is.EqualTo(first), "Mutable stack and position are the same target.");
+
+            Main.item[slot] = GroundItem(slot, 5, new Vector2(100, 100));
+            string replacement = Despawn(adapter, actor, session, slot).Facts["targetGeneration"];
+            Assert.That(int.Parse(replacement), Is.GreaterThan(int.Parse(first)),
+                "A new server object in the reused slot starts a new target generation.");
+        });
+    }
+
+    private static WorldItem GroundItem(int slot, int stack, Vector2 position)
+    {
+        var item = new WorldItem { whoAmI = slot };
+        item.inner.SetDefaults(ItemID.Wood);
+        item.stack = stack;
+        item.position = position;
+        return item;
+    }
+
+    private static BusinessRuleResult Despawn(M2BusinessAdapter adapter, TSPlayer actor,
+        SessionKey session, short slot)
+    {
+        byte[] body = new byte[2];
+        BinaryPrimitives.WriteInt16LittleEndian(body, slot);
+        var parsed = M2PacketReader.Read(Packet(PacketTypes.SyncItemDespawn, body), true);
+        Assert.That(parsed.Kind, Is.EqualTo(PacketReadKind.Parsed));
+        return adapter.Evaluate(parsed.Packet!, session, actor, _ => (null, null), false)
+            .Single(result => result.RuleId == M18GroundItemClearQueueRules.RuleId);
+    }
+
+    private static void WithGroundItemRuntime(Action<M2BusinessAdapter, TSPlayer, SessionKey> action)
+    {
+        const int slot = 7;
+        var oldItems = Main.item;
+        var oldPlayer = Main.player[slot];
+        int oldMode = Main.netMode, oldWidth = Main.maxTilesX;
+        try
+        {
+            Main.netMode = 0; Main.maxTilesX = 0;
+            Main.item = Enumerable.Range(0, 401).Select(index => new WorldItem { whoAmI = index }).ToArray();
+            Main.player[slot] = new Player { whoAmI = slot, active = true, position = new Vector2(100, 100) };
+            var actor = new TSPlayer(slot) { IsLoggedIn = true,
+                Account = new UserAccount { ID = 707, Name = "ground-item-fixture" },
+                Group = new Group("ground-item-fixture") };
+            var session = new SessionKey(Guid.NewGuid(), 1, slot, 1);
+            var adapter = new M2BusinessAdapter(TargetRuntime.Fingerprint,
+                Path.Combine(Path.GetTempPath(), "absent-ground-item-data"),
+                M18GroundItemClearQueueOptions.TestLabCandidate with
+                { EnablePreForwardBlocks = false, EnablePermanentSanctions = true });
+            adapter.Update(_ => null, session.WorldEpoch);
+            action(adapter, actor, session);
+        }
+        finally
+        {
+            Main.item = oldItems;
+            Main.player[slot] = oldPlayer;
+            Main.netMode = oldMode; Main.maxTilesX = oldWidth;
+        }
+    }
+
+    [Test]
+    public void SentryNativeFrameReaderUsesTheSelectedOffsetAndRejectsShortOrTrailingBodies()
+    {
+        var body = new byte[23];
+        BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(20), 308);
+        byte[] backing = new byte[64];
+        body.CopyTo(backing, 7);
+        Assert.Multiple(() =>
+        {
+            Assert.That(M2PacketReader.TryReadProjectilePayload(backing.AsSpan(7, body.Length), out var selected), Is.True);
+            Assert.That(selected, Is.EqualTo(body));
+            Assert.That(M2PacketReader.TryReadProjectilePayload(backing.AsSpan(7, body.Length - 1), out _), Is.False);
+            Assert.That(M2PacketReader.TryReadProjectilePayload(backing.AsSpan(7, body.Length + 1), out _), Is.False);
+        });
     }
 
     [Test]

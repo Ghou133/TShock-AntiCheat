@@ -3,8 +3,8 @@ using TerrariaApi.Server;
 
 namespace AntiCheat.Plugin.TShock;
 
-public enum M2PacketKind { Emoji, PlayerSlot, Tile, Liquid, ChestOpen, ChestItem, PlayerUpdate, ProjectileNew, ProjectileDestroy, Buff, Heal }
-public sealed record M2Packet(M2PacketKind Kind, byte[] Payload);
+public enum M2PacketKind { Emoji, PlayerSlot, Tile, Liquid, ChestOpen, ChestItem, WorldItemDrop, WorldItemDespawn, PlayerUpdate, ProjectileNew, ProjectileDestroy, Buff, Heal }
+public sealed record M2Packet(M2PacketKind Kind, byte[] Payload, byte MessageId = 0);
 public readonly record struct M2ReadResult(PacketReadKind Kind, M2Packet? Packet);
 
 /// <summary>Target protocol 326 framing. Index is past message id; Length includes that id.</summary>
@@ -17,6 +17,8 @@ public static class M2PacketReader
             PacketTypes.Emoji => M2PacketKind.Emoji, PacketTypes.PlayerSlot => M2PacketKind.PlayerSlot,
             PacketTypes.Tile => M2PacketKind.Tile, PacketTypes.LiquidSet => M2PacketKind.Liquid,
             PacketTypes.ChestGetContents => M2PacketKind.ChestOpen, PacketTypes.ChestItem => M2PacketKind.ChestItem,
+            PacketTypes.ItemDrop => M2PacketKind.WorldItemDrop, PacketTypes.UpdateItemDrop => M2PacketKind.WorldItemDrop,
+            PacketTypes.SyncItemDespawn => M2PacketKind.WorldItemDespawn,
             PacketTypes.PlayerUpdate => M2PacketKind.PlayerUpdate, PacketTypes.ProjectileNew => M2PacketKind.ProjectileNew,
             PacketTypes.ProjectileDestroy => M2PacketKind.ProjectileDestroy,
             PacketTypes.PlayerAddBuff => M2PacketKind.Buff, PacketTypes.PlayerHealOther => M2PacketKind.Heal,
@@ -33,12 +35,13 @@ public static class M2PacketReader
         {
             M2PacketKind.Emoji => 2, M2PacketKind.PlayerSlot => 9, M2PacketKind.Tile => 8,
             M2PacketKind.Liquid => 6, M2PacketKind.ChestOpen => 4, M2PacketKind.ChestItem => 8,
+            M2PacketKind.WorldItemDrop => WorldItemDropSize(bytes), M2PacketKind.WorldItemDespawn => 2,
             M2PacketKind.ProjectileDestroy => 12, M2PacketKind.Buff => 7, M2PacketKind.Heal => 3,
             M2PacketKind.PlayerUpdate => PlayerUpdateSize(bytes),
             M2PacketKind.ProjectileNew => ProjectileSize(bytes), _ => -1
         };
         return expected < 0 || count != expected ? new(PacketReadKind.Malformed, null)
-            : new(PacketReadKind.Parsed, new(kind.Value, bytes.ToArray()));
+            : new(PacketReadKind.Parsed, new(kind.Value, bytes.ToArray(), (byte)args.MsgID));
     }
 
     private static int PlayerUpdateSize(ReadOnlySpan<byte> bytes) => bytes.Length < 14 ? -1
@@ -60,6 +63,28 @@ public static class M2PacketReader
         if ((first & 64) != 0) count += 2;
         if (secondPresent && (bytes[23] & 1) != 0) count += 4;
         return count;
+    }
+
+    /// <summary>Validates the exact selected GetData body and returns an immutable copy.</summary>
+    public static bool TryReadProjectilePayload(ReadOnlySpan<byte> body, out byte[] payload)
+    {
+        int expected = ProjectileSize(body);
+        if (expected < 0 || expected != body.Length)
+        {
+            payload = [];
+            return false;
+        }
+        payload = body.ToArray();
+        return true;
+    }
+
+    // The locked protocol-326 item handler consumes these 24 fixed bytes and
+    // the two optional fields selected by flags 4 and 8. Packet 151 is separate.
+    private static int WorldItemDropSize(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.Length < 24) return -1;
+        byte flags = bytes[21];
+        return 24 + ((flags & 4) != 0 ? 5 : 0) + ((flags & 8) != 0 ? 1 : 0);
     }
 
     public static short Int16(byte[] payload, int offset) => BinaryPrimitives.ReadInt16LittleEndian(payload.AsSpan(offset, 2));

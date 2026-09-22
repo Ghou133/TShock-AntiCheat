@@ -51,15 +51,32 @@ public sealed partial class M7CombatNativeEvidenceTests
         Main.netMode = 2; Main.myPlayer = 255;
         var session = new SessionKey(Guid.NewGuid(), 1, Actor, 1);
         var actor = new TSPlayer(Actor) { IsLoggedIn = true, HasSentInventory = true, Account = new UserAccount { ID = 37 } };
-        bool canWrite = true, cancelNew = false, cancelRetire = false;
+        bool canWrite = true, cancelNew = false, cancelRetire = false, alterAdapterCopy = false;
+        bool retargetBeforePreflight = false, retargetReachedAdapter = false;
         using var guard = new M10SummonBudgetGuard(TargetRuntime.Fingerprint, slot => slot == Actor ? (session, actor, canWrite) : (null, null, false));
         BusinessRuleResult? last = null;
+        void Prior(object? _, OTAPI.Hooks.MessageBuffer.GetDataEventArgs args)
+        {
+            if (!retargetBeforePreflight || args.Instance.whoAmI != Actor || args.PacketId != 27) return;
+            // Model a preceding OTAPI hook selecting another frame. The later
+            // adapter hook restores this request before native dispatch.
+            args.Start += 32;
+            args.Length += 1;
+        }
         void Request(object? _, OTAPI.Hooks.MessageBuffer.GetDataEventArgs args)
         {
             if (args.Instance.whoAmI != Actor) return;
             if (args.Instance.readBuffer[0] == 27)
             {
-                last = guard.Evaluate(new(M2PacketKind.ProjectileNew, args.Instance.readBuffer.AsSpan(1, 23).ToArray()), session, actor, cancelNew);
+                if (retargetBeforePreflight)
+                {
+                    retargetReachedAdapter = args.Start == 32 && args.Length == 25;
+                    args.Start = 0;
+                    args.Length = 24;
+                }
+                var adapterCopy = args.Instance.readBuffer.AsSpan(1, 23).ToArray();
+                if (alterAdapterCopy) adapterCopy[4] ^= 1; // Same key/type, different immutable frame.
+                last = guard.Evaluate(new(M2PacketKind.ProjectileNew, adapterCopy), session, actor, cancelNew);
                 if (cancelNew || !canWrite || last?.Action == ControlAction.Block) args.Result = OTAPI.HookResult.Cancel;
             }
             if (args.Instance.readBuffer[0] == 29 && cancelRetire || args.Instance.readBuffer[0] == 5 && !canWrite)
@@ -76,11 +93,25 @@ public sealed partial class M7CombatNativeEvidenceTests
             if (ArmorSetBonuses.All.Count == 0) ArmorSetBonuses.Initialize();
             if (ArmorSetBonuses.SetsContaining is null || ArmorSetBonuses.SetsContaining.Length == 0 || ArmorSetBonuses.SetsContaining[0] is null)
                 ArmorSetBonuses.BuildLookup();
+            OTAPI.Hooks.MessageBuffer.GetData += Prior;
             guard.Install(); guard.Tick(1); Assert.That(guard.Healthy, Is.True, guard.FailureReason);
             Assert.That(guard.SentryBudget.TargetValidated, Is.True, guard.SentryBudget.FailureReason);
             HookEvents.Terraria.NetMessage.SendData += Sink; OTAPI.Hooks.MessageBuffer.GetData += Request;
             actor.TPlayer.Update(Actor);
-            Create(1, ControlAction.Pass); Create(2, ControlAction.Pass);
+            long beforeDecision = guard.CaptureSentry(Actor)?.Decision?.Sequence ?? 0;
+            long beforePreflight = guard.NativePreflightEvaluations;
+            alterAdapterCopy = true;
+            Create(1, ControlAction.Pass);
+            alterAdapterCopy = false;
+            Assert.Multiple(() =>
+            {
+                Assert.That(guard.NativePreflightEvaluations, Is.EqualTo(beforePreflight + 1));
+                Assert.That(guard.CaptureSentry(Actor)!.Decision!.Sequence, Is.EqualTo(beforeDecision + 2),
+                    "A same-key/type but different adapter payload must not reuse the native preflight decision.");
+                Assert.That(guard.SentryBudget.NativeCommits, Is.EqualTo(1),
+                    "The actual native allocation is still charged once.");
+            });
+            Create(2, ControlAction.Pass);
             Assert.That(last!.Facts["capacityCurrent"], Is.EqualTo("1"));
             Assert.That(last.Facts["capacityUpperBound"], Is.EqualTo("2"), "Potential unsynchronized WarTable contribution must be included.");
             Retire(1); Assert.That(guard.CaptureSentry(Actor)!.KnownActiveEntities, Is.EqualTo(1));
@@ -135,11 +166,26 @@ public sealed partial class M7CombatNativeEvidenceTests
             guard.Forget(session); session = session with { Generation = 2 }; actor.TPlayer.Update(Actor);
             Create(15, ControlAction.Pass);
             Assert.That(guard.CaptureSentry(Actor)!.KnownActiveEntities, Is.EqualTo(1), "Old authenticated generation cannot belong to replacement account.");
+            long beforeRetargetPreflight = guard.NativePreflightEvaluations;
+            long beforeRetargetCommits = guard.SentryBudget.NativeCommits;
+            retargetBeforePreflight = true; cancelNew = true;
+            Create(16, ControlAction.Unknown);
+            retargetBeforePreflight = false; cancelNew = false;
+            Assert.Multiple(() =>
+            {
+                Assert.That(retargetReachedAdapter, Is.True, "The prior hook actually changed the selected native frame before preflight.");
+                Assert.That(guard.NativePreflightEvaluations, Is.EqualTo(beforeRetargetPreflight),
+                    "Preflight must not inspect the old immutable frame after an earlier hook changes start/length.");
+                Assert.That(guard.SentryBudget.NativeCommits, Is.EqualTo(beforeRetargetCommits),
+                    "The later cancelled request must not charge a native sentry body.");
+            });
             TestContext.Out.WriteLine("Native server Update+GetData: repeated27→29 replacements; pending348 ceiling; bound+1 first BLOCK; early-cancelled29 and >1800ticks retain occupied resources; actual29 reopens one slot; cancelled/new-update create no commit; maintenance5 gap preserves Unknown commits; exact5 accept and native equipment raise/decline; slot generation isolates evidence.");
         }
         finally
         {
-            OTAPI.Hooks.MessageBuffer.GetData -= Request; HookEvents.Terraria.NetMessage.SendData -= Sink;
+            OTAPI.Hooks.MessageBuffer.GetData -= Request;
+            OTAPI.Hooks.MessageBuffer.GetData -= Prior;
+            HookEvents.Terraria.NetMessage.SendData -= Sink;
             Main.tile = oldTiles; Main.item = oldItems; Main.maxTilesX = oldWidth; Main.maxTilesY = oldHeight;
             Main.worldSurface = oldSurface; Main.rockLayer = oldRock;
         }

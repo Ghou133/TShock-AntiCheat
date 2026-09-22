@@ -105,6 +105,11 @@ public static class M2RuleRegistry
         Add(M5CombatRules.ArrowEvolutionRuleId, M5CombatRules.Version);
         Add(M7ArrowProjectionRules.RuleId, M7ArrowProjectionRules.Version, "docs/m5-combat.md");
         Add(M6CombatRules.StrikeRuleId, M6CombatRules.Version);
+        Add(M18NpcStrikeQueueRules.RuleId, M18NpcStrikeQueueRules.Version, "docs/luna-m18-merge-review.md");
+        Add(M18GroundItemClearQueueRules.RuleId, M18GroundItemClearQueueRules.Version, "docs/luna-m18-merge-review.md");
+        Add(M18WorldEditQueueRules.RuleId, M18WorldEditQueueRules.Version, "docs/luna-m18-merge-review.md");
+        Add(M18ParticleQueueRules.RuleId, M18ParticleQueueRules.Version, "docs/luna-m18-merge-review.md");
+        Add(M18LockHealthRules.RuleId, M18LockHealthRules.Version, "docs/luna-m18-merge-review.md");
         Add(M16CombatImmunityRules.RuleId, M16CombatImmunityRules.Version, "docs/m16-combat.md");
         Add(M9PlayerTeleportGuard.RuleId, M9PlayerTeleportGuard.Version);
         Add("C3.SentryBudget", "1.0.0");
