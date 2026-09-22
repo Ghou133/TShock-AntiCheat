@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "reviewedSource": "55c7f6987276cbbe2a7bd6a025fe42849b5d46ca",
+  "capabilities": [
+    {
+      "id": "session-enforcement",
+      "name": "会话与处罚恢复",
+      "implementation": "已实现",
+      "boundary": "有界会话、账号隔离、处罚意图与恢复；生产接通须单独验证",
+      "source": "src/AntiCheat.Core/AntiCheatEngine.cs",
+      "tests": "tests/AntiCheat.Core.Tests/EnforcementTests.cs",
+      "evidence": "公开单元测试可运行；真实封禁存储与重启须使用匹配运行包复验",
+      "next": "R4-01"
+    },
+    {
+      "id": "protocol-safety",
+      "name": "协议与输入安全",
+      "implementation": "部分实现",
+      "boundary": "有限身份、方向、数值和结构规则；不是完整协议权威",
+      "source": "src/AntiCheat.Plugin.TShock/M2RuleRegistry.cs",
+      "tests": "tests/AntiCheat.Adapter.Tests/M3ProductionQualificationTests.cs",
+      "evidence": "代码内存在有限生产资格登记；关联的历史审计资料未全部公开，发布前须重建证据",
+      "next": "R1-02"
+    },
+    {
+      "id": "npc-strikes",
+      "name": "NPC 伤害与批量击杀",
+      "implementation": "部分实现",
+      "boundary": "普通跨目标序列仅观察；有限候选预算独立止损，序列永封关闭",
+      "source": "src/AntiCheat.Rules/M18NpcStrikeQueueRules.cs",
+      "tests": "tests/AntiCheat.Rules.Tests/M18NpcStrikeQueueRuleTests.cs",
+      "evidence": "已有规则与适配器回归源码；没有当前最终 DLL 的公开客户端处罚闭环证据",
+      "next": "R3-01"
+    },
+    {
+      "id": "ground-items",
+      "name": "地面掉落物异常清除",
+      "implementation": "仅观察",
+      "boundary": "记录有限请求与目标代际；不阻断、不踢出、不永封",
+      "source": "src/AntiCheat.Rules/M18GroundItemClearQueueRules.cs",
+      "tests": "tests/AntiCheat.Adapter.Tests/M18GroundItemIdentityTests.cs",
+      "evidence": "packet151 使用两字节物品编号；原生删除归因及排他非法来源尚未闭合",
+      "next": "R3-02"
+    },
+    {
+      "id": "world-resources",
+      "name": "世界编辑与粒子请求",
+      "implementation": "部分实现",
+      "boundary": "候选模式下有限资源预算；不是完整世界回滚",
+      "source": "src/AntiCheat.Rules/M18WorldEditQueueRules.cs",
+      "tests": "tests/AntiCheat.Rules.Tests/M18WorldEditQueueRuleTests.cs",
+      "evidence": "另有 M18ParticleQueueRules 及对应回归；资源拒绝不产生账号永封",
+      "next": "R3-03"
+    },
+    {
+      "id": "life-sync",
+      "name": "生命同步异常",
+      "implementation": "实验性",
+      "boundary": "有限一点伤害与满血同步；仅隔离测试可服务踢出，无永封",
+      "source": "src/AntiCheat.Plugin.TShock/M18LockHealthContext.cs",
+      "tests": "tests/AntiCheat.Adapter.Tests/M18LockHealthRootTests.cs",
+      "evidence": "不是通用锁血或永久闪避检测；Production 的主动阻断与服务踢出未启用",
+      "next": "R3-04"
+    },
+    {
+      "id": "summons",
+      "name": "召唤与哨兵数量",
+      "implementation": "部分实现",
+      "boundary": "仅有限类型的原生容量控制；不是全召唤物覆盖或超限即永封",
+      "source": "src/AntiCheat.Plugin.TShock/M10SummonBudgetGuard.cs",
+      "tests": "tests/AntiCheat.Adapter.Tests/M10SummonNativeTests.cs",
+      "evidence": "有限史莱姆召唤与冰霜九头蛇哨兵上下文；生成先于退休的瞬态需保留",
+      "next": "R3-05"
+    },
+    {
+      "id": "inventory-progression",
+      "name": "物品结构与进度",
+      "implementation": "部分实现",
+      "boundary": "有限结构、生成条件与进度检查；不是全物品来源账本",
+      "source": "src/AntiCheat.Plugin.TShock/M3InventoryContexts.cs",
+      "tests": "tests/AntiCheat.Rules.Tests/InventoryRuleTests.cs",
+      "evidence": "候选数据不自动授予处罚资格；缺失目录或来源资料时部分规则降级",
+      "next": "R3-06"
+    },
+    {
+      "id": "observations",
+      "name": "观察日志与奖励记录",
+      "implementation": "已实现",
+      "boundary": "有界记录、裁剪与写盘退避；奖励记录不证明全资产来源",
+      "source": "src/AntiCheat.Persistence/M18ObservationJournal.cs",
+      "tests": "tests/AntiCheat.Persistence.Tests/M18ObservationJournalTests.cs",
+      "evidence": "公开持久化测试可运行；记录不可用不能触发账号处罚",
+      "next": "R4-01"
+    }
+  ]
+}

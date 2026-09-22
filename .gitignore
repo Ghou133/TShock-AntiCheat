@@ -1,4 +1,4 @@
-# Local runtime, evidence, packaged output and caches remain outside the public repository.
+# Local runtime, evidence, packaged output and caches are never public source.
 **/bin/
 **/obj/
 **/__pycache__/
@@ -12,8 +12,21 @@
 *.exe
 *.pdb
 *.wld
+*.wld.bak
+*.plr
+*.plr.bak
 *.sqlite
 *.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.dmp
+*.pem
+*.key
+.env
+.env.*
+!.env.example
 
 /.lab/
 /.tools/
@@ -26,22 +39,28 @@
 /scripts/
 /data/runtime/
 /manifest.json
-/AGENTS.md
-/START_HERE.md
-/CHANGELOG.md
 /Codex-M16-Plus-Major-Coverage-Goal.md
 
-# The public entry is README.md. Historical reports remain in the local archive.
+# Explicit public documentation allowlist. Do not accidentally publish old local reports.
+# Add intentional new public guides here; private notes belong outside the checkout.
 /docs/*
+!/docs/ARCHITECTURE.md
+!/docs/BUILDING.md
+!/docs/CONFIGURATION.md
+!/docs/STATUS.md
+!/docs/ROADMAP.md
+!/docs/DEVELOPMENT.md
+!/docs/REVIEW-2026-09.md
+!/docs/capabilities.json
 !/docs/m3-target-ledger.json
 !/docs/luna-m18-merge-review.md
 
-# Keep only the current scope handoff, not its older proposals.
+# Historical scope snapshots; current public plan is docs/ROADMAP.md.
 /anticheat-scope-handoff/*
 !/anticheat-scope-handoff/AntiCheat-M18-PostScope-Master.md
 !/anticheat-scope-handoff/AntiCheat-M18-Scope72-Map.md
 
-# Only the MIT fixtures and their provenance metadata are redistributed.
+# Redistributable fixtures and their provenance metadata only.
 /reference/*
 !/reference/source-lock.json
 !/reference/mklp/
@@ -54,7 +73,7 @@
 /reference/mklp/MKLP/Modules/*
 !/reference/mklp/MKLP/Modules/SurvivalManager.cs
 
-# Old milestone notes are superseded by the root README and current scope files.
+# Superseded local milestone notes, not the maintained public guides.
 /src/AntiCheat.Plugin.TShock/README.md
 /tools/**/README.md
 /tests/**/README.md
